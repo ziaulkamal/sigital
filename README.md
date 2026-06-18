@@ -1,19 +1,20 @@
 <div align="center">
 
-# E-Gov CRM
+<img src="./public/images/logo-abdya.png" alt="Logo Pemerintah Kabupaten Aceh Barat Daya" width="120">
 
-### Laravel + Tailwinds + Vue
+# SIGITAL — Sertifikat Digital
 
-A modern, fully-featured CRM UI Design System for government and enterprise applications.
+### Layanan Penerbitan Sertifikat Digital Pemerintah Kabupaten Aceh Barat Daya
 
-Developed by **[Ziaul Kamal](https://github.com/ziaulkamal)**
+Dibangun oleh **Dinas Komunikasi, Informatika, Statistik, dan Persandian (Diskominsa) Aceh Barat Daya**
+
+Tahun Pembuatan: **2026**
 
 [![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20?style=flat&logo=laravel&logoColor=white)](https://laravel.com)
 [![Vue.js](https://img.shields.io/badge/Vue-3.x-42b883?style=flat&logo=vue.js&logoColor=white)](https://vuejs.org)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38bdf8?style=flat&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?style=flat&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Inertia.js](https://img.shields.io/badge/Inertia.js-3.x-9553E9?style=flat)](https://inertiajs.com)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 
 </div>
 
@@ -22,16 +23,18 @@ Developed by **[Ziaul Kamal](https://github.com/ziaulkamal)**
 ## Preview
 
 <p align="center">
-  <img src="./screenshoot.png" alt="E-Gov CRM Preview" width="100%">
+  <img src="./screenshoot.png" alt="SIGITAL Preview" width="100%">
 </p>
 
 ---
 
-## Overview
+## Tentang
 
-**E-Gov CRM** adalah starter kit UI yang dibangun di atas stack modern Laravel + Inertia.js + Vue 3 + TailwindCSS v4. Menyediakan sistem komponen lengkap, template halaman, dan layout shell yang dirancang untuk aplikasi CRM, dashboard administrasi, dan layanan berbasis pemerintahan digital.
+**SIGITAL** adalah aplikasi penerbitan dan pengelolaan sertifikat digital milik **Pemerintah Kabupaten Aceh Barat Daya**, dikembangkan dan dikelola oleh **Diskominsa Aceh Barat Daya**.
 
-Semua komponen dibangun dari scratch menggunakan Scoped CSS + CSS Custom Properties — tanpa dependensi UI library eksternal seperti Element Plus atau Vuetify.
+Aplikasi ini memungkinkan instansi di lingkungan Pemkab Aceh Barat Daya untuk membuat acara/kegiatan, mengelola peserta, menetapkan penanda tangan, serta menerbitkan sertifikat digital dengan penomoran yang aman dan dapat diverifikasi.
+
+Dibangun di atas stack Laravel + Inertia.js + Vue 3 + TailwindCSS v4 dengan TypeScript strict mode.
 
 ---
 
@@ -53,93 +56,30 @@ Semua komponen dibangun dari scratch menggunakan Scoped CSS + CSS Custom Propert
 
 ## Fitur Utama
 
-- **Dark Mode** — class-based via `.dark` pada `<html>`, disimpan ke `localStorage`, aurora animation di sidebar
-- **Sidebar Collapsible** — state persisten antar navigasi halaman, ikon-only mode di tablet
-- **Active Nav State** — auto-detect dari URL aktif via `usePage()`, dropdown auto-open untuk rute yang aktif
-- **Topbar** — search bar, theme toggle, notifikasi, user dropdown dengan animasi
-- **Responsive** — mobile drawer overlay, tablet icon-only, desktop full sidebar
-- **Icon Gallery** — 220+ ikon dari `@lucide/vue` dengan hover tooltip menampilkan kode import
-- **TypeScript Strict** — semua file `.vue`, composable, dan data menggunakan TypeScript penuh
+- **Manajemen Acara** — buat & kelola acara/kegiatan beserta kolaborator (event member + join code)
+- **Manajemen Peserta** — input manual atau impor massal, pelacakan status sertifikat
+- **Penanda Tangan (Signatory)** — kelola penanda tangan resmi, cegah duplikasi
+- **Penerbitan Sertifikat** — render PDF dengan template & branding instansi, penomoran aman & sulit ditebak
+- **Template & Branding** — kustomisasi tampilan sertifikat per organisasi
+- **Multi-Organisasi (Tenancy)** — pemisahan data antar instansi, switcher untuk SuperAdmin
+- **Keamanan Akun** — verifikasi OTP via WhatsApp saat registrasi, Two-Factor Authentication (2FA)
+- **Notifikasi** — notifikasi internal (registrasi, persetujuan akun, acara, permintaan bergabung)
+- **Audit Log** — pencatatan aktivitas penting
+- **Dark Mode** — class-based, persisten via `localStorage`
 
 ---
 
-## Komponen
+## Halaman Legal & Ketentuan Layanan
 
-### Foundation (Batch 01)
-- Design tokens via `@theme` — color, radius, shadow, font, spacing
-- Dark mode CSS custom properties
-- `BaseLayout.vue` — shell layout dengan sidebar + topbar
-- `AuthLayout.vue` — layout terpusat untuk halaman autentikasi
-- `useTheme.ts` — composable dark mode dengan `localStorage`
+SIGITAL menyediakan halaman informasi hukum yang wajib disetujui/diketahui pengguna:
 
-### Core UI (Batch 02) — 23 Komponen
-
-| Kategori | Komponen |
+| Halaman | Deskripsi |
 |---|---|
-| Form | `AppButton`, `AppInput`, `AppTextarea`, `AppSelect`, `AppCheckbox`, `AppRadio`, `AppToggle` |
-| Display | `AppBadge`, `AppAvatar`, `AppSpinner`, `AppSkeleton`, `AppDivider`, `AppProgressBar` |
-| Feedback | `AppToast`, `AppAlert`, `AppModal`, `AppDrawer` |
-| Overlay | `AppTooltip`, `AppPopover`, `AppDropdown`, `AppContextMenu` |
-| Structure | `AppTabs`, `AppAccordion`, `AppBreadcrumb`, `AppCard`, `AppEmptyState` |
+| **Syarat dan Ketentuan Layanan** | Ketentuan penggunaan layanan SIGITAL, hak & kewajiban pengguna, batasan tanggung jawab Pemkab Aceh Barat Daya, serta aturan penerbitan dan keabsahan sertifikat digital. |
+| **Kebijakan Privasi** | Penjelasan jenis data pribadi yang dikumpulkan (identitas, nomor telepon, dsb.), tujuan penggunaan, dasar pemrosesan, penyimpanan, dan hak pengguna atas datanya, sesuai peraturan perlindungan data yang berlaku. |
+| **Pemberitahuan Cookie (Cookie Concern)** | Informasi penggunaan cookie/penyimpanan lokal (sesi login, preferensi tema, dsb.), jenis cookie yang dipakai, dan cara pengguna mengelola persetujuannya. |
 
-### Dashboard Widgets (Batch 03)
-`KpiCard` · `RevenueChart` · `DealFunnelChart` · `ActivityFeed` · `QuickActionBar` · `RecentContactsWidget`
-
-### Fitur Kompleks (Batch 04) — 14 Komponen
-`DataTable` · `AppPagination` · `AppDatePicker` · `FileDropzone` · `WizardStepper` · `WizardForm` · `KanbanBoard` · `KanbanCard` · `MailLayout` · `MailListItem` · `MailCompose` · `ChatLayout` · `ChatBubble` · `ChatInput`
-
----
-
-## Halaman
-
-| Route | Halaman | Deskripsi |
-|---|---|---|
-| `/` | Dashboard | KPI cards, revenue chart, deal pipeline, activity feed |
-| `/contacts` | Contacts | DataTable dengan filter, bulk select, status badge |
-| `/contacts/new` | New Contact | Wizard form 4 langkah |
-| `/contacts/:id` | Contact Detail | Profil, deals, timeline aktivitas |
-| `/kanban` | Kanban | Drag-and-drop CRM pipeline (5 kolom) |
-| `/mail` | Mail | 3-panel inbox: sidebar · list · thread |
-| `/chat` | Chat | Chat interface dengan date divider & read receipt |
-| `/settings` | Settings | Profile, notifikasi, keamanan, appearance |
-| `/icons` | Icon Gallery | 220+ ikon dengan hover tooltip kode import |
-| `/blocks` | Block Sections | Stat card, pricing, team, feature highlight, alert, empty state |
-| `/demo/datatable` | DataTable Demo | Sortable, filterable, paginated |
-| `/demo/datepicker` | DatePicker Demo | Single, range, constrained |
-| `/demo/dropzone` | Dropzone Demo | Upload dengan simulasi progress |
-| `/demo/wizard` | Wizard Demo | Multi-step form dengan review step |
-| `/login` | Login | Email + password, social buttons |
-| `/register` | Register | Password strength meter |
-| `/forgot-password` | Forgot Password | Form + sent confirmation state |
-| `/404` | 404 Error | Gradient text, blob dekoratif |
-| `/500` | 500 Error | Server error dengan random error ID |
-| `/ui` | UI Showcase | Preview live semua komponen Batch 02 |
-
----
-
-## Struktur Proyek
-
-```
-resources/
-├── css/
-│   └── app.css                   # Design tokens (@theme), dark mode vars
-├── js/
-│   ├── app.ts                    # Entry point Inertia + Vue
-│   ├── Composables/
-│   │   ├── useTheme.ts           # Dark mode toggle + localStorage
-│   │   └── useToast.ts           # Global toast state
-│   ├── Components/
-│   │   ├── App/                  # Semua komponen UI reusable
-│   │   └── Dashboard/            # Widget khusus dashboard
-│   ├── data/
-│   │   └── navGroups.ts          # Data navigasi sidebar (shared)
-│   ├── Layouts/
-│   │   ├── BaseLayout.vue        # Layout utama (sidebar + topbar)
-│   │   └── AuthLayout.vue        # Layout halaman auth
-│   └── Pages/                    # Komponen halaman Inertia
-routes/
-└── web.php                       # Semua route aplikasi
-```
+> Konten halaman legal dikelola oleh Diskominsa Aceh Barat Daya dan dapat diperbarui sewaktu-waktu mengikuti regulasi yang berlaku.
 
 ---
 
@@ -154,18 +94,17 @@ routes/
 
 ```bash
 # Clone repository
-git clone https://github.com/ziaulkamal/starter-laravel-tailwindcss.git
-cd starter-laravel-tailwindcss
+git clone https://github.com/ziaulkamal/sigital.git
+cd sigital
 
-# Install PHP dependencies
+# Install dependencies
 composer install
-
-# Install Node dependencies
 npm install
 
 # Konfigurasi environment
 cp .env.example .env
 php artisan key:generate
+php artisan migrate
 
 # Jalankan development server
 php artisan serve
@@ -182,40 +121,18 @@ npm run build
 
 ---
 
-## Konvensi Kode
-
-- **Dark mode:** class-based via `.dark` pada `<html>`, dikelola `useTheme.ts`
-- **Warna:** CSS custom properties (`--color-primary`, `--color-surface`, dst.)
-- **Penamaan komponen:** PascalCase `.vue`
-- **Composables:** prefix `use`, ekstensi `.ts`
-- **Styling:** Scoped CSS + CSS custom properties — tidak ada dynamic Tailwind string di computed
-- **Icons:** tree-shaken dari `@lucide/vue` — social/brand icon tidak tersedia
-- **Props:** selalu `type` + `default`, diketik dengan TypeScript runtime API
-
----
-
-## Catatan Pengembangan
-
-Proyek ini dikembangkan dalam 5 batch berurutan:
-
-1. **Batch 01** — Design System & Foundation
-2. **Batch 02** — Core UI Components (23 komponen)
-3. **Batch 03** — Navigation Shell & Dashboard
-4. **Batch 04** — Complex Feature Components (14 komponen)
-5. **Batch 05** — Sample Pages & Polish (20 halaman)
-
----
-
 ## Lisensi
 
-MIT — Bebas digunakan untuk proyek personal maupun komersial.
+Hak cipta dan hak penggunaan aplikasi ini dimiliki oleh **Pemerintah Kabupaten Aceh Barat Daya**. Penggunaan, distribusi, dan modifikasi di luar lingkungan resmi Pemkab Aceh Barat Daya harus dengan izin tertulis dari Diskominsa Aceh Barat Daya.
 
 ---
 
 <div align="center">
 
-**E-Gov CRM** &nbsp;·&nbsp; Laravel + Tailwinds + Vue
+<img src="./public/images/logo-abdya.png" alt="Logo Aceh Barat Daya" width="64">
 
-Dikembangkan oleh **[Ziaul Kamal](https://github.com/ziaulkamal)**
+**SIGITAL — Sertifikat Digital**
+
+Dibuat oleh **Diskominsa Aceh Barat Daya** &nbsp;·&nbsp; © 2026 Pemerintah Kabupaten Aceh Barat Daya
 
 </div>
