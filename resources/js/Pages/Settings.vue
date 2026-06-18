@@ -1,114 +1,152 @@
+<!--
+    resources/js/Pages/Settings.vue
+    Pengaturan akun sendiri (P4): tab Akun (profil) + Keamanan (ganti password).
+    Tab Keamanan akan diperluas dengan 2FA pada P5.
+-->
 <template>
     <BaseLayout :nav-groups="navGroups">
         <div class="page">
             <div class="page__header">
-                <h1 class="page__title">Settings</h1>
-                <p class="page__sub">Manage your account and preferences</p>
+                <h1 class="page__title">Pengaturan</h1>
+                <p class="page__sub">Kelola profil dan keamanan akun Anda.</p>
             </div>
 
-            <AppTabs :tabs="tabs">
-                <template #profile>
+            <FlashBanner />
+
+            <AppTabs v-model="activeTab" :tabs="tabs">
+                <!-- ── Akun (profil) ── -->
+                <template #akun>
                     <div class="stg__section">
-                        <h3 class="stg__section-title">Profile Information</h3>
-                        <div class="stg__form">
-                            <div class="stg__avatar-row">
-                                <AppAvatar name="Ziaul Kamal" size="lg" />
-                                <div>
-                                    <p class="stg__avatar-name">Ziaul Kamal</p>
-                                    <p class="stg__avatar-email">ziaulkamal1109@gmail.com</p>
-                                    <button class="stg__change-photo">Change photo</button>
-                                </div>
+                        <h3 class="stg__section-title">Informasi Profil</h3>
+                        <form class="stg__form" @submit.prevent="submitProfile">
+                            <div class="stg__field">
+                                <AppInput v-model="profileForm.name" label="Nama" required :error="profileForm.errors.name" />
                             </div>
-                            <AppDivider />
-                            <div class="stg__field-grid">
-                                <div class="stg__field">
-                                    <label class="stg__label">First Name</label>
-                                    <AppInput v-model="profile.firstName" placeholder="First name" />
-                                </div>
-                                <div class="stg__field">
-                                    <label class="stg__label">Last Name</label>
-                                    <AppInput v-model="profile.lastName" placeholder="Last name" />
-                                </div>
-                                <div class="stg__field stg__field--full">
-                                    <label class="stg__label">Email Address</label>
-                                    <AppInput v-model="profile.email" type="email" placeholder="email@example.com" />
-                                </div>
-                                <div class="stg__field stg__field--full">
-                                    <label class="stg__label">Bio</label>
-                                    <AppTextarea v-model="profile.bio" placeholder="Tell us about yourself…" :rows="3" />
-                                </div>
+                            <div class="stg__field">
+                                <AppInput v-model="profileForm.email" type="email" label="Email" required :error="profileForm.errors.email" />
                             </div>
                             <div class="stg__actions">
-                                <AppButton variant="primary">Save Changes</AppButton>
-                                <AppButton variant="ghost">Cancel</AppButton>
+                                <AppButton variant="primary" :loading="profileForm.processing" @click="submitProfile">
+                                    Simpan Perubahan
+                                </AppButton>
                             </div>
-                        </div>
-                    </div>
-                </template>
+                        </form>
 
-                <template #notifications>
-                    <div class="stg__section">
-                        <h3 class="stg__section-title">Notification Preferences</h3>
-                        <div class="stg__notif-list">
-                            <div v-for="n in notifications" :key="n.key" class="stg__notif-item">
-                                <div>
-                                    <p class="stg__notif-label">{{ n.label }}</p>
-                                    <p class="stg__notif-desc">{{ n.desc }}</p>
-                                </div>
-                                <AppToggle v-model="n.enabled" />
-                            </div>
-                        </div>
-                    </div>
-                </template>
-
-                <template #security>
-                    <div class="stg__section">
-                        <h3 class="stg__section-title">Change Password</h3>
-                        <div class="stg__form">
-                            <div class="stg__field">
-                                <label class="stg__label">Current Password</label>
-                                <AppInput v-model="passwords.current" type="password" placeholder="••••••••" />
-                            </div>
-                            <div class="stg__field">
-                                <label class="stg__label">New Password</label>
-                                <AppInput v-model="passwords.new" type="password" placeholder="••••••••" />
-                            </div>
-                            <div class="stg__field">
-                                <label class="stg__label">Confirm New Password</label>
-                                <AppInput v-model="passwords.confirm" type="password" placeholder="••••••••" />
-                            </div>
-                            <div class="stg__actions">
-                                <AppButton variant="primary">Update Password</AppButton>
-                            </div>
-                        </div>
-                        <AppDivider label="Danger Zone" />
+                        <AppDivider label="Zona Berbahaya" />
                         <div class="stg__danger">
-                            <div>
-                                <p class="stg__danger-title">Delete Account</p>
-                                <p class="stg__danger-desc">Permanently delete your account and all associated data.</p>
+                            <p class="stg__danger-desc">Menonaktifkan akun akan mengakhiri sesi Anda dan mencegah login. Hubungi administrator untuk mengaktifkan kembali.</p>
+                            <div class="stg__field">
+                                <AppInput v-model="deactivateForm.current_password" type="password" label="Password (untuk konfirmasi)" :error="deactivateForm.errors.current_password" />
                             </div>
-                            <AppButton variant="danger">Delete Account</AppButton>
+                            <div class="stg__actions">
+                                <AppButton variant="danger" :loading="deactivateForm.processing" @click="deactivate">
+                                    Nonaktifkan Akun
+                                </AppButton>
+                            </div>
                         </div>
                     </div>
                 </template>
 
-                <template #appearance>
+                <!-- ── Keamanan (ganti password) ── -->
+                <template #keamanan>
                     <div class="stg__section">
-                        <h3 class="stg__section-title">Appearance</h3>
-                        <div class="stg__appear-grid">
-                            <div
-                                v-for="theme in themes"
-                                :key="theme.id"
-                                class="stg__theme-card"
-                                :class="{ 'stg__theme-card--active': activeTheme === theme.id }"
-                                @click="activeTheme = theme.id"
-                            >
-                                <div class="stg__theme-preview" :style="{ background: theme.bg }">
-                                    <div class="stg__theme-sidebar" :style="{ background: theme.sidebar }" />
+                        <h3 class="stg__section-title">Ganti Password</h3>
+                        <form class="stg__form" @submit.prevent="submitPassword">
+                            <div class="stg__field">
+                                <AppInput v-model="passwordForm.current_password" type="password" label="Password Saat Ini" required :error="passwordForm.errors.current_password" />
+                            </div>
+                            <div class="stg__field">
+                                <AppInput v-model="passwordForm.password" type="password" label="Password Baru" required :error="passwordForm.errors.password" />
+                            </div>
+                            <div class="stg__field">
+                                <AppInput v-model="passwordForm.password_confirmation" type="password" label="Konfirmasi Password Baru" required />
+                            </div>
+                            <div class="stg__actions">
+                                <AppButton variant="primary" :loading="passwordForm.processing" @click="submitPassword">
+                                    Perbarui Password
+                                </AppButton>
+                            </div>
+                        </form>
+
+                        <AppDivider label="Autentikasi Dua Faktor (2FA)" />
+
+                        <!-- 2FA aktif -->
+                        <div v-if="twoFactorEnabled" class="stg__2fa">
+                            <p class="stg__2fa-status stg__2fa-status--on">2FA aktif. Akun Anda dilindungi kode TOTP saat login.</p>
+
+                            <div v-if="recoveryCodes.length" class="stg__codes">
+                                <p class="stg__codes-title">Recovery codes (simpan di tempat aman, sekali pakai):</p>
+                                <ul class="stg__codes-list">
+                                    <li v-for="c in recoveryCodes" :key="c">{{ c }}</li>
+                                </ul>
+                            </div>
+
+                            <form class="stg__form" @submit.prevent="disable2fa">
+                                <div class="stg__field">
+                                    <AppInput v-model="disableForm.current_password" type="password" label="Password Saat Ini (untuk menonaktifkan)" required :error="disableForm.errors.current_password" />
                                 </div>
-                                <p class="stg__theme-label">{{ theme.label }}</p>
+                                <div class="stg__actions">
+                                    <AppButton variant="ghost" :loading="recoveryForm.processing" @click="regenerateCodes">
+                                        Terbitkan Ulang Recovery Codes
+                                    </AppButton>
+                                    <AppButton variant="danger" :loading="disableForm.processing" @click="disable2fa">
+                                        Nonaktifkan 2FA
+                                    </AppButton>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Setup 2FA: tampilkan QR + konfirmasi kode -->
+                        <div v-else-if="setup" class="stg__2fa">
+                            <p class="stg__2fa-hint">Pindai QR berikut dengan aplikasi authenticator (Google Authenticator, Authy, dll), lalu masukkan kode 6 digit untuk mengonfirmasi.</p>
+                            <div class="stg__qr" v-html="setup.svg" />
+                            <p class="stg__secret">Atau masukkan kunci manual: <code>{{ setup.secret }}</code></p>
+                            <form class="stg__form" @submit.prevent="confirm2fa">
+                                <div class="stg__field">
+                                    <AppInput v-model="confirmForm.code" label="Kode Verifikasi" placeholder="123456" required :error="confirmForm.errors.code" />
+                                </div>
+                                <div class="stg__actions">
+                                    <AppButton variant="primary" :loading="confirmForm.processing" @click="confirm2fa">
+                                        Konfirmasi &amp; Aktifkan
+                                    </AppButton>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Belum aktif -->
+                        <div v-else class="stg__2fa">
+                            <p class="stg__2fa-status">2FA belum aktif. Tambahkan lapisan keamanan ekstra saat login.</p>
+                            <div class="stg__actions">
+                                <AppButton variant="primary" :loading="enableForm.processing" @click="enable2fa">
+                                    Aktifkan 2FA
+                                </AppButton>
                             </div>
                         </div>
+                    </div>
+                </template>
+
+                <!-- ── Branding organisasi (P6/K8) — Admin org ── -->
+                <template v-if="canManageBranding" #branding>
+                    <div class="stg__section">
+                        <h3 class="stg__section-title">Branding Organisasi</h3>
+                        <p class="stg__2fa-hint">Logo &amp; kop disisipkan otomatis di kepala sertifikat yang Anda terbitkan.</p>
+                        <form class="stg__form" @submit.prevent="submitBranding">
+                            <div class="stg__field">
+                                <label class="stg__label">Logo (PNG/JPG, maks 2MB)</label>
+                                <input type="file" accept="image/png,image/jpeg" @change="onLogo" />
+                                <p v-if="brandingForm.errors.logo" class="stg__err">{{ brandingForm.errors.logo }}</p>
+                            </div>
+                            <div class="stg__field">
+                                <label class="stg__label">Kop Surat (PNG/JPG, maks 4MB)</label>
+                                <input type="file" accept="image/png,image/jpeg" @change="onKop" />
+                                <p v-if="brandingForm.errors.kop" class="stg__err">{{ brandingForm.errors.kop }}</p>
+                            </div>
+                            <div class="stg__actions">
+                                <AppButton variant="primary" :loading="brandingForm.processing" @click="submitBranding">
+                                    Simpan Branding
+                                </AppButton>
+                            </div>
+                        </form>
                     </div>
                 </template>
             </AppTabs>
@@ -117,98 +155,133 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import BaseLayout  from '@/Layouts/BaseLayout.vue';
-import AppTabs     from '@/Components/App/AppTabs.vue';
-import AppInput    from '@/Components/App/AppInput.vue';
-import AppTextarea from '@/Components/App/AppTextarea.vue';
-import AppButton   from '@/Components/App/AppButton.vue';
-import AppToggle   from '@/Components/App/AppToggle.vue';
-import AppAvatar   from '@/Components/App/AppAvatar.vue';
-import AppDivider  from '@/Components/App/AppDivider.vue';
+import { computed, ref } from 'vue';
+import { useForm, usePage } from '@inertiajs/vue3';
+import BaseLayout from '@/Layouts/BaseLayout.vue';
+import AppTabs from '@/Components/App/AppTabs.vue';
+import AppInput from '@/Components/App/AppInput.vue';
+import AppButton from '@/Components/App/AppButton.vue';
+import AppDivider from '@/Components/App/AppDivider.vue';
+import FlashBanner from '@/Components/FlashBanner.vue';
 import { navGroups } from '@/data/navGroups';
-import { BellIcon, UserIcon, ShieldIcon, PaletteIcon } from '@lucide/vue';
+import { UserIcon, ShieldIcon, ImageIcon } from '@lucide/vue';
 
-const tabs = [
-    { key: 'profile',       label: 'Profile',       icon: UserIcon },
-    { key: 'notifications', label: 'Notifications', icon: BellIcon },
-    { key: 'security',      label: 'Security',      icon: ShieldIcon },
-    { key: 'appearance',    label: 'Appearance',    icon: PaletteIcon },
-];
+const page = usePage();
+const authUser = computed(() => (page.props.auth as { user?: { name?: string; email?: string; two_factor_enabled?: boolean; roles?: string[]; is_super_admin?: boolean } })?.user ?? null);
 
-const profile = ref({ firstName: 'Ziaul', lastName: 'Kamal', email: 'ziaulkamal1109@gmail.com', bio: '' });
-const passwords = ref({ current: '', new: '', confirm: '' });
-const activeTheme = ref('light');
+// Branding hanya untuk Admin organisasi (bukan SuperAdmin yang tak punya org).
+const canManageBranding = computed(() => !authUser.value?.is_super_admin && (authUser.value?.roles ?? []).includes('Admin'));
 
-const notifications = ref([
-    { key: 'new_contact',  label: 'New Contact',       desc: 'Get notified when a new contact is added.', enabled: true },
-    { key: 'deal_closed',  label: 'Deal Closed',        desc: 'Get notified when a deal is closed.',       enabled: true },
-    { key: 'email_reply',  label: 'Email Replies',      desc: 'Get notified when you receive a reply.',    enabled: false },
-    { key: 'weekly_report',label: 'Weekly Report',      desc: 'Receive a weekly performance summary.',     enabled: true },
-    { key: 'marketing',    label: 'Marketing Updates',  desc: 'News and feature announcements.',           enabled: false },
+const tabs = computed(() => [
+    { value: 'akun', label: 'Akun', icon: UserIcon },
+    { value: 'keamanan', label: 'Keamanan', icon: ShieldIcon },
+    ...(canManageBranding.value ? [{ value: 'branding', label: 'Branding', icon: ImageIcon }] : []),
 ]);
+const activeTab = ref('akun');
 
-const themes = [
-    { id: 'light', label: 'Light',      bg: '#f8fafc', sidebar: '#fff' },
-    { id: 'dark',  label: 'Dark',       bg: '#0f172a', sidebar: '#1e293b' },
-    { id: 'system',label: 'System',     bg: 'linear-gradient(135deg, #f8fafc 50%, #0f172a 50%)', sidebar: '#6366f1' },
-];
+// ── Status & data 2FA (P5) ──
+interface TwoFactorFlash { stage: 'setup' | 'enabled'; svg?: string; secret?: string; recovery_codes?: string[] }
+const twoFactorEnabled = computed(() => authUser.value?.two_factor_enabled ?? false);
+const tfFlash = computed<TwoFactorFlash | null>(() => (page.props.flash as { twoFactor?: TwoFactorFlash })?.twoFactor ?? null);
+const setup = computed(() => (tfFlash.value?.stage === 'setup' ? tfFlash.value : null));
+const recoveryCodes = computed(() => (tfFlash.value?.stage === 'enabled' ? tfFlash.value.recovery_codes ?? [] : []));
+
+const profileForm = useForm({
+    name: authUser.value?.name ?? '',
+    email: authUser.value?.email ?? '',
+});
+
+const passwordForm = useForm({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
+});
+
+function submitProfile() {
+    profileForm.patch('/settings/profile', { preserveScroll: true });
+}
+
+function submitPassword() {
+    passwordForm.put('/settings/password', {
+        preserveScroll: true,
+        onSuccess: () => passwordForm.reset(),
+    });
+}
+
+// ── Nonaktifkan akun ──
+const deactivateForm = useForm({ current_password: '' });
+function deactivate() {
+    if (!confirm('Yakin menonaktifkan akun? Anda akan keluar dan tidak bisa login lagi.')) return;
+    deactivateForm.delete('/settings/account');
+}
+
+// ── 2FA ──
+const enableForm = useForm({});
+const confirmForm = useForm({ code: '' });
+const disableForm = useForm({ current_password: '' });
+const recoveryForm = useForm({});
+
+function enable2fa() {
+    enableForm.post('/settings/two-factor/enable', { preserveScroll: true });
+}
+
+function confirm2fa() {
+    confirmForm.post('/settings/two-factor/confirm', {
+        preserveScroll: true,
+        onSuccess: () => confirmForm.reset(),
+    });
+}
+
+function regenerateCodes() {
+    recoveryForm.post('/settings/two-factor/recovery-codes', { preserveScroll: true });
+}
+
+function disable2fa() {
+    disableForm.delete('/settings/two-factor', {
+        preserveScroll: true,
+        onSuccess: () => disableForm.reset(),
+    });
+}
+
+// ── Branding (P6) ──
+const brandingForm = useForm<{ logo: File | null; kop: File | null }>({ logo: null, kop: null });
+
+function onLogo(e: Event) { brandingForm.logo = (e.target as HTMLInputElement).files?.[0] ?? null; }
+function onKop(e: Event) { brandingForm.kop = (e.target as HTMLInputElement).files?.[0] ?? null; }
+
+function submitBranding() {
+    // method spoofing PUT untuk multipart.
+    brandingForm.transform((d) => ({ ...d, _method: 'put' })).post('/settings/branding', {
+        preserveScroll: true,
+        forceFormData: true,
+    });
+}
 </script>
 
 <style scoped>
 .page { padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 800px; }
-.page__header { }
 .page__title { font-size: 20px; font-weight: 800; color: var(--color-text-primary); font-family: var(--font-heading); letter-spacing: -0.02em; }
-.page__sub   { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; }
+.page__sub { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; }
 
 .stg__section { display: flex; flex-direction: column; gap: 20px; }
 .stg__section-title { font-size: 14px; font-weight: 700; color: var(--color-text-primary); margin: 0; }
-
-.stg__form { display: flex; flex-direction: column; gap: 16px; }
-.stg__avatar-row { display: flex; align-items: center; gap: 16px; }
-.stg__avatar-name  { font-size: 15px; font-weight: 700; color: var(--color-text-primary); margin: 0; }
-.stg__avatar-email { font-size: 12.5px; color: var(--color-text-muted); margin: 2px 0 8px; }
-.stg__change-photo {
-    font-size: 12px; color: #6366f1; font-weight: 500; border: none;
-    background: transparent; cursor: pointer; font-family: var(--font-sans); padding: 0;
-}
-.stg__change-photo:hover { text-decoration: underline; }
-
-.stg__field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.stg__form { display: flex; flex-direction: column; gap: 16px; max-width: 420px; }
 .stg__field { display: flex; flex-direction: column; gap: 6px; }
-.stg__field--full { grid-column: 1 / -1; }
-.stg__label { font-size: 12px; font-weight: 600; color: var(--color-text-muted); }
+.stg__label { font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
+.stg__err { font-size: 12px; color: #dc2626; }
+.stg__actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.stg__danger { display: flex; flex-direction: column; gap: 14px; max-width: 420px; }
+.stg__danger-desc { font-size: 13px; color: var(--color-text-muted); line-height: 1.5; }
 
-.stg__actions { display: flex; gap: 10px; }
-
-.stg__notif-list { display: flex; flex-direction: column; gap: 0; }
-.stg__notif-item {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    padding: 14px 0; border-bottom: 1px solid var(--color-border);
-}
-.stg__notif-item:last-child { border-bottom: none; }
-.stg__notif-label { font-size: 13px; font-weight: 600; color: var(--color-text-primary); margin: 0; }
-.stg__notif-desc  { font-size: 12px; color: var(--color-text-muted); margin: 2px 0 0; }
-
-.stg__danger {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    padding: 16px; border-radius: 10px;
-    border: 1.5px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.04);
-}
-.stg__danger-title { font-size: 13px; font-weight: 600; color: #ef4444; margin: 0; }
-.stg__danger-desc  { font-size: 12px; color: var(--color-text-muted); margin: 2px 0 0; }
-
-.stg__appear-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.stg__theme-card {
-    display: flex; flex-direction: column; gap: 8px; cursor: pointer;
-    border: 2px solid var(--color-border); border-radius: 10px;
-    padding: 8px; transition: border-color 150ms ease;
-}
-.stg__theme-card:hover { border-color: color-mix(in srgb, #6366f1 40%, var(--color-border)); }
-.stg__theme-card--active { border-color: #6366f1; }
-.stg__theme-preview {
-    height: 70px; border-radius: 6px; overflow: hidden; display: flex;
-}
-.stg__theme-sidebar { width: 25%; height: 100%; }
-.stg__theme-label { font-size: 12px; font-weight: 600; color: var(--color-text-primary); text-align: center; }
+.stg__2fa { display: flex; flex-direction: column; gap: 16px; max-width: 420px; }
+.stg__2fa-status { font-size: 13px; color: var(--color-text-muted); margin: 0; }
+.stg__2fa-status--on { color: #16a34a; font-weight: 600; }
+.stg__2fa-hint { font-size: 13px; color: var(--color-text-muted); margin: 0; line-height: 1.5; }
+.stg__qr { width: 200px; height: 200px; background: #fff; padding: 8px; border: 1px solid var(--color-border); border-radius: 10px; }
+.stg__qr :deep(svg) { width: 100%; height: 100%; }
+.stg__secret { font-size: 12.5px; color: var(--color-text-muted); margin: 0; }
+.stg__secret code { font-family: var(--font-mono); background: var(--color-bg-subtle); padding: 2px 6px; border-radius: 6px; }
+.stg__codes { padding: 14px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-bg-subtle); }
+.stg__codes-title { font-size: 12.5px; font-weight: 600; color: var(--color-text-primary); margin: 0 0 8px; }
+.stg__codes-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; list-style: none; margin: 0; padding: 0; font-family: var(--font-mono); font-size: 12.5px; color: var(--color-text-primary); }
 </style>

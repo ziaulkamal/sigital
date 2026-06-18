@@ -67,8 +67,22 @@
                 role="listbox"
                 @keydown.esc="close"
             >
+                <!-- Pencarian (gaya select2) -->
+                <div v-if="searchable" class="app-sel__search">
+                    <SearchIcon :size="14" class="app-sel__search-icon" />
+                    <input
+                        ref="searchInput"
+                        v-model="query"
+                        type="text"
+                        class="app-sel__search-input"
+                        :placeholder="searchPlaceholder"
+                        @click.stop
+                        @keydown.esc="close"
+                    />
+                </div>
+
                 <button
-                    v-if="placeholder"
+                    v-if="placeholder && !query"
                     type="button"
                     class="app-sel__option app-sel__option--placeholder"
                     role="option"
@@ -77,8 +91,11 @@
                 >
                     {{ placeholder }}
                 </button>
+
+                <p v-if="searchable && !filteredOptions.length" class="app-sel__empty">Tidak ada hasil.</p>
+
                 <button
-                    v-for="opt in options"
+                    v-for="opt in filteredOptions"
                     :key="opt.value ?? opt"
                     type="button"
                     class="app-sel__option"
@@ -103,12 +120,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted, type PropType } from 'vue';
+import { SearchIcon } from '@lucide/vue';
 
 type SelectOption = { value?: string | number; label?: string; disabled?: boolean; icon?: unknown } | string | number;
 
 const props = defineProps({
-    modelValue: { default: '' },
+    modelValue: { type: [String, Number] as PropType<string | number>, default: '' },
     options:    { type: Array as () => SelectOption[], default: () => [] },
     label:      { type: String,  default: '' },
     placeholder:{ type: String,  default: 'Select…' },
@@ -118,6 +136,8 @@ const props = defineProps({
     disabled:   { type: Boolean, default: false },
     required:   { type: Boolean, default: false },
     native:     { type: Boolean, default: false },
+    searchable: { type: Boolean, default: false },
+    searchPlaceholder: { type: String, default: 'Cari…' },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -127,6 +147,8 @@ let _id = 0;
 const selId     = `app-sel-${++_id}`;
 const isFocused = ref(false);
 const isOpen    = ref(false);
+const query     = ref('');
+const searchInput = ref<HTMLInputElement | null>(null);
 
 const selectedLabel = computed<string>(() => {
     const opt = props.options.find(o => (typeof o === 'object' && o !== null ? (o as { value?: string | number }).value : o) === props.modelValue);
@@ -134,7 +156,24 @@ const selectedLabel = computed<string>(() => {
     return typeof opt === 'object' && opt !== null ? ((opt as { label?: string }).label ?? String(opt)) : String(opt);
 });
 
-function toggle(): void { isOpen.value = !isOpen.value; }
+function optLabel(opt: SelectOption): string {
+    return typeof opt === 'object' && opt !== null ? ((opt as { label?: string }).label ?? '') : String(opt);
+}
+
+const filteredOptions = computed<SelectOption[]>(() => {
+    if (!props.searchable || !query.value.trim()) return props.options;
+    const q = query.value.trim().toLowerCase();
+    return props.options.filter(o => optLabel(o).toLowerCase().includes(q));
+});
+
+function toggle(): void { isOpen.value ? close() : open(); }
+function open(): void {
+    isOpen.value = true;
+    if (props.searchable) {
+        query.value = '';
+        nextTick(() => searchInput.value?.focus());
+    }
+}
 function close(): void  { isOpen.value = false; }
 function select(val: string | number): void {
     emit('update:modelValue', val);
@@ -191,11 +230,24 @@ onUnmounted(() => document.removeEventListener('click', onOutsideClick));
     border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
     padding: 4px; max-height: 260px; overflow-y: auto;
 }
+.app-sel__search {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 4px;
+    border-bottom: 1px solid var(--color-border); position: sticky; top: -4px;
+    background: var(--color-surface); z-index: 1;
+}
+.app-sel__search-icon { color: var(--color-text-subtle); flex-shrink: 0; }
+.app-sel__search-input {
+    flex: 1; border: none; outline: none; background: transparent; min-width: 0;
+    font-size: 13px; font-family: var(--font-sans); color: var(--color-text-primary);
+}
+.app-sel__search-input::placeholder { color: var(--color-text-subtle); }
+.app-sel__empty { padding: 10px; font-size: 12.5px; color: var(--color-text-subtle); text-align: center; }
+
 .app-sel__option {
     display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px;
     border: none; background: transparent; cursor: pointer; text-align: left;
     font-size: 13px; font-family: var(--font-sans); color: var(--color-text-primary);
-    border-radius: var(--radius-md); transition: background 120ms ease;
+    border-radius: var(--radius-md); transition: background 120ms ease; line-height: 1.35;
 }
 .app-sel__option:hover:not(:disabled) { background: var(--color-bg-subtle); }
 .app-sel__option--active { color: #6366f1; font-weight: 500; }

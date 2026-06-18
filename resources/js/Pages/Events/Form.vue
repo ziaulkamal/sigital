@@ -32,7 +32,7 @@
                             <span><strong>{{ s.nama }}</strong><br><small>{{ s.jabatan }}</small></span>
                         </label>
                         <p v-if="!signatoryOptions.length" class="ev-form__empty">
-                            Belum ada penanda tangan. <a href="/signatories">Tambah dulu →</a>
+                            Belum ada penanda tangan. <Link href="/signatories">Tambah dulu →</Link>
                         </p>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import AppButton from '@/Components/App/AppButton.vue';
 import AppInput from '@/Components/App/AppInput.vue';

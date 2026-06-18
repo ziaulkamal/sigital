@@ -23,9 +23,17 @@ class EventController extends Controller
 
     public function index(): Response
     {
+        $user = request()->user();
+
+        // P7: tampilkan acara yang dimiliki/diikuti user (approved); SuperAdmin lihat semua.
+        $events = Event::withCount(['registrations', 'signatories'])
+            ->when(! $user->isSuperAdmin(), fn ($q) => $q->whereHas('members', fn ($m) => $m
+                ->where('user_id', $user->id)
+                ->where('status', \App\Models\EventMember::STATUS_APPROVED)))
+            ->orderByDesc('id')->get();
+
         return Inertia::render('Events/Index', [
-            'events' => Event::withCount(['registrations', 'signatories'])
-                ->orderByDesc('id')->get()->map(fn ($e) => [
+            'events' => $events->map(fn ($e) => [
                     'id' => $e->id,
                     'nama' => $e->nama,
                     'kode' => $e->kode,
@@ -52,7 +60,15 @@ class EventController extends Controller
 
     public function show(Event $event): Response
     {
-        $event->load(['template', 'signatories', 'registrations.person', 'registrations.certificate']);
+        $this->authorize('view', $event); // P7 — cegah IDOR akses acara via ID langsung
+
+        $event->load([
+            'template', 'signatories', 'registrations.person', 'registrations.certificate',
+            'members.user',
+        ]);
+
+        $user = request()->user();
+        $isOwner = $event->created_by === $user->id;
 
         return Inertia::render('Events/Show', [
             'event' => [
@@ -66,6 +82,15 @@ class EventController extends Controller
                 'can_issue' => $event->canIssue(),
                 'template' => $event->template?->only('id', 'nama'),
                 'signatories' => $event->signatories->map->only('id', 'nama', 'jabatan'),
+                // P7 — kolaborasi: kode undangan (owner/SuperAdmin) + daftar anggota & permintaan.
+                'is_owner' => $isOwner || $user->isSuperAdmin(),
+                'join_code' => ($isOwner || $user->isSuperAdmin()) ? $event->join_code : null,
+                'members' => $event->members->map(fn ($m) => [
+                    'id' => $m->id,
+                    'user' => $m->user?->only('id', 'name', 'email'),
+                    'role' => $m->role,
+                    'status' => $m->status,
+                ]),
             ],
             'participants' => $event->registrations->map(fn ($r) => [
                 'registration_id' => $r->id,
@@ -84,6 +109,7 @@ class EventController extends Controller
 
     public function edit(Event $event): Response
     {
+        $this->authorize('update', $event);
         $event->load('signatories');
 
         return Inertia::render('Events/Form', [
@@ -104,6 +130,7 @@ class EventController extends Controller
 
     public function update(UpdateEventRequest $request, Event $event): RedirectResponse
     {
+        $this->authorize('update', $event);
         $this->service->update($event, $request->validated());
 
         return redirect()->route('events.show', $event)->with('success', 'Acara diperbarui.');
@@ -111,6 +138,7 @@ class EventController extends Controller
 
     public function destroy(Event $event): RedirectResponse
     {
+        $this->authorize('delete', $event);
         $event->delete();
 
         return redirect()->route('events.index')->with('success', 'Acara dihapus.');

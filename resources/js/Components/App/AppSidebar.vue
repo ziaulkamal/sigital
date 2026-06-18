@@ -28,7 +28,8 @@
         <!-- ── Logo / Brand ── -->
         <div class="flex items-center h-16 shrink-0 px-3 gap-3">
             <div class="sidebar-logo shrink-0">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <img v-if="appLogo" :src="appLogo" :alt="appName" class="sidebar-logo__img" />
+                <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M10 2L18 6.5V13.5L10 18L2 13.5V6.5L10 2Z" fill="white" fill-opacity="0.95"/>
                     <circle cx="10" cy="10" r="3" fill="white" fill-opacity="0.5"/>
                 </svg>
@@ -114,10 +115,10 @@
                     <UserAvatar :user="user" size="sm" :border-bg="isDark ? '#1e293b' : '#f0f1f8'" />
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold truncate leading-tight" :style="{ color: textPrimary }">
-                            {{ user?.name ?? 'Admin User' }}
+                            {{ user?.name ?? 'Pengguna' }}
                         </p>
                         <p class="text-xs truncate" :style="{ color: textMuted }">
-                            {{ user?.email ?? 'admin@crm.com' }}
+                            {{ user?.email ?? '' }}
                         </p>
                     </div>
                     <button class="p-1 rounded-lg transition-colors" title="Collapse sidebar" @click.stop="$emit('update:collapsed', true)">
@@ -178,8 +179,9 @@ const props = defineProps({
     mobileOpen:  { type: Boolean, default: false },
     isMobile:    { type: Boolean, default: false },
     isDark:      { type: Boolean, default: false },
-    appName:     { type: String,  default: 'E-Gov CRM' },
-    appSubtitle: { type: String,  default: 'Laravel + Tailwinds + Vue' },
+    appName:     { type: String,  default: 'SIGITAL' },
+    appSubtitle: { type: String,  default: 'Sertifikat Digital' },
+    appLogo:     { type: String,  default: '' },
 });
 
 defineEmits(['update:collapsed', 'update:mobileOpen']);
@@ -298,8 +300,9 @@ const iconGroupStyle = computed<Record<string, string>>(() => ({
     background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 12px rgba(99,102,241,0.35);
-    flex-shrink: 0;
+    flex-shrink: 0; overflow: hidden;
 }
+.sidebar-logo__img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ── Aurora overlay ── */
 .sidebar-aurora {

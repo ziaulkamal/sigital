@@ -10,6 +10,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Notifications\AccountDecision;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -52,6 +53,7 @@ class ApprovalService
             ], $approver->id);
         });
 
+        $user->notify(new AccountDecision(true));
         $this->notify($user, 'Akun SIGITAL Anda telah disetujui',
             "Halo {$user->name}, akun Anda telah disetujui. Silakan masuk untuk mulai menggunakan SIGITAL.");
     }
@@ -69,6 +71,7 @@ class ApprovalService
             'reason' => $reason,
         ], $approver->id);
 
+        $user->notify(new AccountDecision(false, $reason));
         $this->notify($user, 'Pendaftaran SIGITAL Anda ditolak',
             "Halo {$user->name}, pendaftaran Anda belum dapat disetujui.".($reason ? " Alasan: {$reason}" : ''));
     }

@@ -10,8 +10,10 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+// created_by sengaja tidak fillable (server-controlled): diisi di SignatoryService (P3).
 #[Fillable(['nama', 'jabatan', 'gambar_ttd', 'bsre_cert_id', 'is_active'])]
 class Signatory extends Model
 {
@@ -20,6 +22,12 @@ class Signatory extends Model
     protected function casts(): array
     {
         return ['is_active' => 'boolean'];
+    }
+
+    /** Pembuat penanda tangan (P3 — signatory per-user). */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function events(): BelongsToMany

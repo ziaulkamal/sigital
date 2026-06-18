@@ -12,16 +12,22 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Organization;
 use App\Models\User;
+use App\Notifications\UserRegistered;
 use App\Services\AuditLogger;
+use App\Services\WhatsApp\PhoneOtpService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RegisterController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly PhoneOtpService $otp,
+    ) {}
 
     public function create(): Response
     {
@@ -71,6 +77,8 @@ class RegisterController extends Controller
                 'organization_id' => $organization->id,
                 'status' => User::STATUS_PENDING,
                 'requested_role' => $requestedRole,
+                'nik' => $data['nik'],
+                'phone' => $data['phone'],
             ])->save();
 
             if ($newOrg) {
@@ -88,9 +96,15 @@ class RegisterController extends Controller
             return $user;
         });
 
-        // Login agar bisa melihat halaman tunggu; akses aplikasi diblokir EnsureApproved.
+        // Beri tahu seluruh SuperAdmin ada pendaftar baru menunggu persetujuan.
+        Notification::send(User::whereNull('organization_id')->get(), new UserRegistered($user));
+
+        // Kirim OTP WhatsApp lalu arahkan ke verifikasi nomor (anti akun palsu).
+        $this->otp->sendOtp($user);
+
+        // Login agar bisa melihat alur verifikasi/tunggu; akses aplikasi diblokir EnsureApproved.
         Auth::login($user);
 
-        return redirect()->route('pending');
+        return redirect()->route('verify-phone');
     }
 }

@@ -50,13 +50,15 @@ class ApprovalFlowTest extends TestCase
     {
         $this->post('/register', [
             'name' => 'Budi', 'email' => 'budi@test.local',
+            'nik' => '3201010101010001', 'phone' => '081234567801',
             'password' => 'password123', 'password_confirmation' => 'password123',
             'org_mode' => 'new', 'org_nama' => 'Relawan X', 'org_kode' => 'RELX', 'org_type' => 'komunitas',
-        ])->assertRedirect('/pending');
+        ])->assertRedirect('/verify-phone');
 
         $user = User::where('email', 'budi@test.local')->first();
         $this->assertNotNull($user);
         $this->assertSame(User::STATUS_PENDING, $user->status);
+        $this->assertSame('3201010101010001', $user->nik);
         $this->assertSame('Admin', $user->requested_role); // pengaju org baru → calon Admin
         $this->assertFalse($user->organization->is_active);
     }
@@ -65,6 +67,7 @@ class ApprovalFlowTest extends TestCase
     {
         $this->post('/register', [
             'name' => 'Sari', 'email' => 'sari@test.local',
+            'nik' => '3201010101010002', 'phone' => '081234567802',
             'password' => 'password123', 'password_confirmation' => 'password123',
             'org_mode' => 'new', 'org_nama' => 'Dinas Y', 'org_kode' => 'DINY', 'org_type' => 'dinas',
         ])->assertSessionHasErrors('recommendation_letter');
@@ -78,10 +81,11 @@ class ApprovalFlowTest extends TestCase
 
         $this->post('/register', [
             'name' => 'Sari', 'email' => 'sari@test.local',
+            'nik' => '3201010101010003', 'phone' => '081234567803',
             'password' => 'password123', 'password_confirmation' => 'password123',
             'org_mode' => 'new', 'org_nama' => 'Dinas Y', 'org_kode' => 'DINY', 'org_type' => 'dinas',
             'recommendation_letter' => UploadedFile::fake()->create('surat.pdf', 120, 'application/pdf'),
-        ])->assertRedirect('/pending');
+        ])->assertRedirect('/verify-phone');
 
         $org = Organization::where('kode', 'DINY')->first();
         $this->assertNotNull($org->recommendation_letter_path);
@@ -94,9 +98,10 @@ class ApprovalFlowTest extends TestCase
 
         $this->post('/register', [
             'name' => 'Joni', 'email' => 'joni@test.local',
+            'nik' => '3201010101010004', 'phone' => '081234567804',
             'password' => 'password123', 'password_confirmation' => 'password123',
             'org_mode' => 'existing', 'organization_id' => $org->id,
-        ])->assertRedirect('/pending');
+        ])->assertRedirect('/verify-phone');
 
         $user = User::where('email', 'joni@test.local')->first();
         $this->assertSame('Operator', $user->requested_role);

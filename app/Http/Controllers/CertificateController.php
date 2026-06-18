@@ -37,6 +37,8 @@ class CertificateController extends Controller
     /** Antrekan penerbitan massal untuk seluruh peserta acara. */
     public function issueBatch(Event $event): RedirectResponse
     {
+        $this->authorize('view', $event); // P7 — hanya owner/member acara
+
         try {
             $batch = $this->batch->dispatchFor($event, auth()->id());
         } catch (\RuntimeException $e) {

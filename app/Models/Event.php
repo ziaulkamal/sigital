@@ -36,6 +36,26 @@ class Event extends Model
         return $this->belongsTo(Template::class);
     }
 
+    /** Pemilik acara (P7). */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(EventMember::class);
+    }
+
+    /** User adalah owner atau collaborator yang sudah di-approve (P7/K10). */
+    public function hasApprovedMember(int $userId): bool
+    {
+        return $this->members()
+            ->where('user_id', $userId)
+            ->where('status', EventMember::STATUS_APPROVED)
+            ->exists();
+    }
+
     public function signatories(): BelongsToMany
     {
         return $this->belongsToMany(Signatory::class, 'event_signatory')

@@ -50,10 +50,21 @@ class OrganizationScopingTest extends TestCase
         return $user;
     }
 
-    private function eventIn(Organization $org, string $nama): Event
+    private function eventIn(Organization $org, string $nama, ?User $owner = null): Event
     {
         app(Tenancy::class)->setOrganizationId($org->id);
         $event = Event::create(['nama' => $nama, 'jadwal_mulai' => now()]);
+        // P7: indeks acara kini disaring keanggotaan → jadikan owner sebagai member approved.
+        if ($owner !== null) {
+            $event->forceFill(['created_by' => $owner->id])->save();
+            \App\Models\EventMember::create([
+                'event_id' => $event->id,
+                'user_id' => $owner->id,
+                'role' => \App\Models\EventMember::ROLE_OWNER,
+                'status' => \App\Models\EventMember::STATUS_APPROVED,
+                'approved_at' => now(),
+            ]);
+        }
         app(Tenancy::class)->setOrganizationId(null);
 
         return $event;
@@ -64,8 +75,8 @@ class OrganizationScopingTest extends TestCase
         $operatorA = $this->operatorFor($this->orgA, 'a@test.local');
         $operatorB = $this->operatorFor($this->orgB, 'b@test.local');
 
-        $this->eventIn($this->orgA, 'Acara Dinas A');
-        $this->eventIn($this->orgB, 'Acara Komunitas B');
+        $this->eventIn($this->orgA, 'Acara Dinas A', $operatorA);
+        $this->eventIn($this->orgB, 'Acara Komunitas B', $operatorB);
 
         $this->actingAs($operatorA)->get('/events')
             ->assertOk()

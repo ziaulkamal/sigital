@@ -19,6 +19,8 @@ class ParticipantController extends Controller
 
     public function store(StoreParticipantRequest $request, Event $event): RedirectResponse
     {
+        $this->authorize('view', $event); // P7 — hanya owner/member acara
+
         if ($this->service->isDuplicate($event, $request->validated())) {
             return back()->with('error', 'Peserta sudah terdaftar di acara ini.');
         }

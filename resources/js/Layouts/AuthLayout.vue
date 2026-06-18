@@ -19,10 +19,11 @@
         <!-- Logo / Brand -->
         <div class="relative mb-8 flex flex-col items-center gap-3">
             <div
-                class="flex items-center justify-center w-12 h-12 rounded-xl shadow-lg"
+                class="flex items-center justify-center w-12 h-12 rounded-xl shadow-lg overflow-hidden"
                 style="background-color: var(--color-primary);"
             >
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <img v-if="brand.logo" :src="brand.logo" :alt="brand.name" class="w-full h-full object-cover" />
+                <svg v-else width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 2L14 5V11L8 14L2 11V5L8 2Z" fill="white" fill-opacity="0.9"/>
                 </svg>
             </div>
@@ -30,7 +31,7 @@
                 class="text-xl font-bold tracking-tight"
                 style="color: var(--color-text-primary); font-family: var(--font-heading);"
             >
-                CRM Studio
+                {{ brand.name }}
             </h1>
         </div>
 
@@ -61,7 +62,7 @@
         <!-- Footer links -->
         <div class="relative mt-6 flex items-center gap-4 text-sm" style="color: var(--color-text-muted);">
             <slot name="footer">
-                <span>© {{ year }} CRM Studio</span>
+                <span>© {{ year }} {{ brand.name }}</span>
             </slot>
         </div>
 
@@ -82,6 +83,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import { useTheme } from '@/Composables/useTheme';
 import { Sun, Moon } from '@lucide/vue';
 
@@ -94,6 +96,12 @@ defineProps({
         type: String,
         default: '',
     },
+});
+
+const page = usePage();
+const brand = computed(() => {
+    const a = page.props.app as { name?: string; logo?: string | null } | undefined;
+    return { name: a?.name ?? 'SIGITAL', logo: a?.logo ?? null };
 });
 
 const { isDark, toggleTheme } = useTheme();

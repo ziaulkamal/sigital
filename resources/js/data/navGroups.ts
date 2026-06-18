@@ -2,7 +2,7 @@
 // Navigasi sidebar SIGITAL. `roles` opsional membatasi item per peran (Admin/Operator).
 import {
     LayoutDashboard, Settings,
-    CalendarIcon, AwardIcon, PenLineIcon, ShieldCheckIcon, UserCheckIcon,
+    CalendarIcon, AwardIcon, PenLineIcon, ShieldCheckIcon, UserCheckIcon, LayoutTemplateIcon,
 } from '@lucide/vue';
 
 export interface NavItem {
@@ -44,8 +44,9 @@ export const navGroups: NavGroup[] = [
         label: 'Administrasi',
         color: '#7c3aed',
         items: [
-            { label: 'Penanda Tangan', icon: PenLineIcon,     href: '/signatories', roles: ['Admin'] },
-            { label: 'Log Audit',      icon: ShieldCheckIcon, href: '/audit',       roles: ['Admin'] },
+            { label: 'Penanda Tangan', icon: PenLineIcon,         href: '/signatories', roles: ['Admin', 'SuperAdmin'] },
+            { label: 'Template',       icon: LayoutTemplateIcon,  href: '/templates',   roles: ['Admin', 'SuperAdmin'] },
+            { label: 'Log Audit',      icon: ShieldCheckIcon,     href: '/audit',       roles: ['Admin', 'SuperAdmin'] },
         ],
     },
     {

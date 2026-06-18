@@ -1,51 +1,52 @@
 <template>
     <AuthLayout
-        :title="sent ? 'Check your email' : 'Reset password'"
-        :subtitle="sent ? `We sent a link to ${form.email}` : 'Enter your email and we\'ll send a reset link'"
+        :title="sent ? 'Periksa email Anda' : 'Atur ulang password'"
+        :subtitle="sent ? `Kami mengirim tautan ke ${form.email}` : 'Masukkan email Anda, kami akan kirim tautan atur ulang'"
     >
         <Transition name="fp-fade" mode="out-in">
-            <!-- Sent state -->
+            <!-- Sudah terkirim -->
             <div v-if="sent" key="sent" class="fp-sent">
                 <div class="fp-sent__icon">
                     <MailIcon :size="28" style="color: #6366f1;" />
                 </div>
                 <p class="fp-sent__text">
-                    Didn't receive it? Check your spam folder or
-                    <button class="fp-sent__resend" @click="sent = false">try another email</button>.
+                    Tidak menerimanya? Periksa folder spam atau
+                    <button class="fp-sent__resend" @click="sent = false">coba email lain</button>.
                 </p>
                 <AppButton variant="ghost" size="md" style="width:100%" @click="sent = false">
-                    Back to reset
+                    Kembali
                 </AppButton>
             </div>
 
             <!-- Form -->
             <form v-else key="form" class="auth-form" @submit.prevent="submit">
                 <div class="auth-form__field">
-                    <label class="auth-form__label">Email address</label>
+                    <label class="auth-form__label">Email</label>
                     <AppInput
                         v-model="form.email"
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder="anda@instansi.go.id"
                         :error="errors.email"
                         size="md"
                     />
                 </div>
                 <AppButton type="submit" variant="primary" size="lg" :loading="loading" style="width:100%">
-                    Send Reset Link
+                    Kirim Tautan
                 </AppButton>
             </form>
         </Transition>
 
         <template #footer>
-            <a href="/login" style="color: #6366f1; font-size: 13px; font-weight: 600;">
-                ← Back to sign in
-            </a>
+            <Link href="/login" style="color: #6366f1; font-size: 13px; font-weight: 600;">
+                ← Kembali ke halaman masuk
+            </Link>
         </template>
     </AuthLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import { MailIcon } from '@lucide/vue';
 import AuthLayout from '@/Layouts/AuthLayout.vue';
 import AppInput   from '@/Components/App/AppInput.vue';
@@ -57,7 +58,7 @@ const loading = ref(false);
 const sent    = ref(false);
 
 function submit() {
-    errors.email = form.email ? '' : 'Email is required.';
+    errors.email = form.email ? '' : 'Email wajib diisi.';
     if (errors.email) return;
     loading.value = true;
     setTimeout(() => { loading.value = false; sent.value = true; }, 1200);

@@ -13,6 +13,7 @@ use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,9 +29,28 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-        $request->session()->regenerate();
+        $user = $request->user();
 
-        $this->audit->log('auth.login', $request->user());
+        // Akun dinonaktifkan → tolak login.
+        if ($user->isSuspended()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            throw ValidationException::withMessages(['email' => 'Akun Anda dinonaktifkan. Hubungi administrator.']);
+        }
+
+        // P5 — bila 2FA aktif: tahan login, alihkan ke tantangan kode TOTP/recovery.
+        if ($user->hasTwoFactorEnabled()) {
+            Auth::guard('web')->logout();
+            $request->session()->put('login.2fa_user_id', $user->id);
+            $request->session()->put('login.2fa_remember', $request->boolean('remember'));
+
+            return redirect()->route('two-factor.login');
+        }
+
+        $request->session()->regenerate();
+        $this->audit->log('auth.login', $user);
 
         return redirect()->intended(route('dashboard'));
     }

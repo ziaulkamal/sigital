@@ -34,11 +34,18 @@
         .sign-name { font-size: 10.5pt; font-weight: bold; border-top: 0.8pt solid #475569; padding-top: 3pt; }
         .sign-role { font-size: 9pt; color: #6b7280; }
         .nomor { font-size: 9pt; color: #6b7280; margin-top: 2pt; }
+        .kop { width: 100%; max-height: 64pt; margin-bottom: 8pt; }
+        .logo { height: 52pt; margin-bottom: 6pt; }
     </style>
 </head>
 <body>
     <div class="sheet">
         <div class="inner">
+            @if(!empty($kopPath))
+                <img class="kop" src="{{ $kopPath }}" alt="Kop">
+            @elseif(!empty($logoPath))
+                <img class="logo" src="{{ $logoPath }}" alt="Logo">
+            @endif
             <div class="eyebrow">Sertifikat</div>
             <div class="instansi">{{ $instansi }}</div>
 

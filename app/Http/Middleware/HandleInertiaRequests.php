@@ -32,8 +32,28 @@ class HandleInertiaRequests extends Middleware
             $roles[] = 'SuperAdmin';
         }
 
+        $brandLogo = config('sigital.brand.logo');
+
         return [
             ...parent::share($request),
+            // Identitas aplikasi (brand) — menggantikan hardcode di layout/login.
+            'app' => [
+                'name' => config('sigital.brand.name'),
+                'tagline' => config('sigital.brand.tagline'),
+                'logo' => $brandLogo ? asset('storage/'.$brandLogo) : null,
+            ],
+            // Notifikasi in-app untuk user terautentikasi (bel di topbar).
+            'notifications' => $user ? [
+                'unread' => fn () => $user->unreadNotifications()->count(),
+                'items' => fn () => $user->notifications()->latest()->limit(10)->get()
+                    ->map(fn ($n) => [
+                        'id' => $n->id,
+                        'type' => class_basename($n->type),
+                        'data' => $n->data,
+                        'read' => $n->read_at !== null,
+                        'created_at' => $n->created_at?->diffForHumans(),
+                    ]),
+            ] : null,
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,
@@ -42,6 +62,7 @@ class HandleInertiaRequests extends Middleware
                     'roles' => $roles,
                     'status' => $user->status,
                     'is_super_admin' => $isSuperAdmin,
+                    'two_factor_enabled' => $user->hasTwoFactorEnabled(),
                     'organization' => $organization ? [
                         'id' => $organization->id,
                         'nama' => $organization->nama,
@@ -61,6 +82,8 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
                 'importPreview' => fn () => $request->session()->get('importPreview'),
+                'signatoryCandidates' => fn () => $request->session()->get('signatoryCandidates'),
+                'twoFactor' => fn () => $request->session()->get('twoFactor'),
                 'batchId' => fn () => $request->session()->get('batchId'),
             ],
         ];

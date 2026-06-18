@@ -10,7 +10,7 @@
                     <h1 class="page__title">Log Audit</h1>
                     <p class="page__sub">{{ logs.total }} catatan · append-only, tak dapat diubah.</p>
                 </div>
-                <AppButton variant="outline" tag="a" href="/audit/export">
+                <AppButton variant="outline" tag="a" href="/audit/export" external>
                     <template #icon><DownloadIcon :size="14" /></template>
                     Ekspor CSV
                 </AppButton>
@@ -50,7 +50,7 @@
                 </table>
 
                 <div v-if="logs.links.length > 3" class="pagination">
-                    <component :is="link.url ? 'a' : 'span'" v-for="(link, i) in logs.links" :key="i"
+                    <component :is="link.url ? Link : 'span'" v-for="(link, i) in logs.links" :key="i"
                         :href="link.url || undefined" class="pagination__link"
                         :class="{ 'pagination__link--active': link.active, 'pagination__link--disabled': !link.url }"
                         v-html="link.label" />
@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, Link } from '@inertiajs/vue3';
 import { SearchIcon, DownloadIcon, XIcon } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import AppButton from '@/Components/App/AppButton.vue';

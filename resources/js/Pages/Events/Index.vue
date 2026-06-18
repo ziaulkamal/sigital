@@ -10,10 +10,16 @@
                     <h1 class="page__title">Acara</h1>
                     <p class="page__sub">Kelola acara, peserta, dan penerbitan sertifikat.</p>
                 </div>
-                <AppButton variant="primary" tag="a" href="/events/create">
-                    <template #icon><PlusIcon :size="15" /></template>
-                    Acara Baru
-                </AppButton>
+                <div class="ev__header-actions">
+                    <AppButton variant="ghost" @click="joinOpen = true">
+                        <template #icon><UserPlusIcon :size="15" /></template>
+                        Gabung Acara
+                    </AppButton>
+                    <AppButton variant="primary" tag="a" href="/events/create">
+                        <template #icon><PlusIcon :size="15" /></template>
+                        Acara Baru
+                    </AppButton>
+                </div>
             </div>
 
             <FlashBanner />
@@ -22,32 +28,53 @@
                 <DataTable :columns="columns" :rows="events" row-id="id"
                     search-placeholder="Cari acara…" :search-keys="['nama', 'kode', 'lokasi']">
                     <template #cell-nama="{ row }">
-                        <a :href="`/events/${row.id}`" class="ev__link">{{ row.nama }}</a>
+                        <Link :href="`/events/${row.id}`" class="ev__link">{{ row.nama }}</Link>
                         <p class="ev__sub">{{ row.kode || '—' }}</p>
                     </template>
                     <template #cell-status="{ row }">
                         <AppBadge :color="statusColor(String(row.status))" size="sm">{{ statusLabel(String(row.status)) }}</AppBadge>
                     </template>
                     <template #row-actions="{ row }">
-                        <a :href="`/events/${row.id}`" class="ev__action"><EyeIcon :size="15" /></a>
+                        <Link :href="`/events/${row.id}`" class="ev__action"><EyeIcon :size="15" /></Link>
                     </template>
                 </DataTable>
             </div>
         </div>
+
+        <AppModal v-model="joinOpen" title="Gabung Acara">
+            <form class="ev__join" @submit.prevent="submitJoin">
+                <p class="ev__join-hint">Masukkan kode undangan dari pemilik acara. Permintaan Anda menunggu persetujuan pemilik.</p>
+                <AppInput v-model="joinForm.join_code" label="Kode Undangan" placeholder="MIS. A1B2C3D4" required :error="joinForm.errors.join_code" />
+            </form>
+            <template #footer>
+                <AppButton variant="ghost" @click="joinOpen = false">Batal</AppButton>
+                <AppButton variant="primary" :loading="joinForm.processing" @click="submitJoin">Kirim Permintaan</AppButton>
+            </template>
+        </AppModal>
     </BaseLayout>
 </template>
 
 <script setup lang="ts">
-import { PlusIcon, EyeIcon } from '@lucide/vue';
+import { ref } from 'vue';
+import { Link, useForm } from '@inertiajs/vue3';
+import { PlusIcon, EyeIcon, UserPlusIcon } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import DataTable from '@/Components/App/DataTable.vue';
 import AppButton from '@/Components/App/AppButton.vue';
 import AppBadge from '@/Components/App/AppBadge.vue';
+import AppModal from '@/Components/App/AppModal.vue';
+import AppInput from '@/Components/App/AppInput.vue';
 import FlashBanner from '@/Components/FlashBanner.vue';
 import { navGroups } from '@/data/navGroups';
 
 interface EventRow { id: number; nama: string; kode: string | null; jadwal_mulai: string | null; lokasi: string | null; status: string; peserta: number; penanda_tangan: number; }
 defineProps<{ events: EventRow[] }>();
+
+const joinOpen = ref(false);
+const joinForm = useForm({ join_code: '' });
+function submitJoin() {
+    joinForm.post('/events/join', { onSuccess: () => { joinOpen.value = false; joinForm.reset(); } });
+}
 
 const columns = [
     { key: 'nama', label: 'Acara', sortable: true },
@@ -76,4 +103,7 @@ function statusLabel(s: string) {
 .ev__sub { font-size: 12px; color: var(--color-text-subtle); }
 .ev__action { display: inline-flex; padding: 6px; border-radius: 8px; border: 1px solid var(--color-border); color: var(--color-text-muted); }
 .ev__action:hover { color: var(--color-text-primary); }
+.ev__header-actions { display: flex; gap: 10px; }
+.ev__join { display: flex; flex-direction: column; gap: 14px; }
+.ev__join-hint { font-size: 13px; color: var(--color-text-muted); line-height: 1.5; }
 </style>

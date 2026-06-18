@@ -24,6 +24,8 @@ class StoreSignatoryRequest extends FormRequest
             'jabatan' => ['required', 'string', 'max:255'],
             'gambar_ttd' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
             'is_active' => ['boolean'],
+            // P3: konfirmasi nama duplikat. 'create_new' = lewati cek (sengaja buat baru).
+            'confirm' => ['nullable', 'in:create_new'],
         ];
     }
 }

@@ -10,9 +10,11 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['nama', 'slug', 'deskripsi', 'background_path', 'view', 'posisi_field', 'is_active', 'is_global'])]
+// uploaded_by server-controlled (diisi TemplateService) → tidak fillable.
+#[Fillable(['nama', 'slug', 'deskripsi', 'background_path', 'background_mime', 'view', 'posisi_field', 'is_active', 'is_global'])]
 class Template extends Model
 {
     use BelongsToOrganization;
@@ -30,6 +32,12 @@ class Template extends Model
     public function organizationScopeIncludesGlobal(): bool
     {
         return true;
+    }
+
+    /** Pengunggah template (P6). */
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 
     public function events(): HasMany

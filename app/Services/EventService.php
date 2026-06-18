@@ -8,6 +8,12 @@
 namespace App\Services;
 
 use App\Models\Event;
+use App\Models\EventMember;
+use App\Models\User;
+use App\Notifications\EventCreated;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 class EventService
 {
@@ -19,12 +25,41 @@ class EventService
         $signatoryIds = $data['signatory_ids'] ?? [];
         unset($data['signatory_ids']);
 
-        $event = Event::create($data);
+        $event = new Event($data);
+        $event->created_by = Auth::id(); // pemilik (P7)
+        $event->join_code = $this->uniqueJoinCode();
+        $event->save();
+
+        // Pembuat otomatis menjadi owner ber-status approved (K10).
+        if ($event->created_by !== null) {
+            EventMember::create([
+                'event_id' => $event->id,
+                'user_id' => $event->created_by,
+                'role' => EventMember::ROLE_OWNER,
+                'status' => EventMember::STATUS_APPROVED,
+                'approved_at' => now(),
+            ]);
+        }
+
         $this->syncSignatories($event, $signatoryIds);
 
         $this->audit->log('event.created', $event, ['nama' => $event->nama]);
 
+        // Beri tahu SuperAdmin acara baru dibuat oleh user.
+        $creatorName = Auth::user()?->name ?? 'Pengguna';
+        Notification::send(User::whereNull('organization_id')->get(), new EventCreated($event, $creatorName));
+
         return $event;
+    }
+
+    /** Kode undangan acak yang unik (Q8 — owner membagikannya untuk join). */
+    private function uniqueJoinCode(): string
+    {
+        do {
+            $code = Str::upper(Str::random(8));
+        } while (Event::withoutOrganizationScope()->where('join_code', $code)->exists());
+
+        return $code;
     }
 
     /** @param array<string,mixed> $data */

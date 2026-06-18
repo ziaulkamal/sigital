@@ -1,0 +1,178 @@
+============================================================
+ SIGITAL — TODOS / PELACAK PROGRES
+ Acuan: NEXT-STEP.md (fase P1–P7) + PRD.md (M1–M5 sudah ada)
+ Terakhir diperbarui: 2026-06-19
+ Legenda:  [x] selesai   [~] sebagian   [ ] belum
+============================================================
+
+------------------------------------------------------------
+ RINGKASAN STATUS FASE
+------------------------------------------------------------
+ [x] P1  Fondasi Multi-Tenant & Scoping        (SELESAI, teruji)
+ [x] P2  Alur Approval & Onboarding            (SELESAI, teruji)
+ [x] P3  Signatory per-user + Konfirmasi Duplikat (SELESAI, teruji)
+ [x] P4  Manajemen Akun (Profil)              (SELESAI, teruji)
+ [x] P5  Modul 2FA                            (SELESAI, teruji)
+ [x] P6  Template & Branding (Logo Kop) per-user (SELESAI, teruji)
+ [x] P7  Kolaborasi Acara (Join & Approval)    (SELESAI, teruji)
+
+ >> SEMUA FASE P1–P7 SELESAI. 44 test LULUS, build frontend OK.
+
+
+============================================================
+ SUDAH SELESAI
+============================================================
+
+[x] P1 — FONDASI MULTI-TENANT & SCOPING
+    [x] Migrasi tabel organizations (nama, kode unik, type, is_active)
+    [x] Kolom organization_id di users/signatories/events/templates/
+        certificates/audit_logs (+ templates.is_global)
+    [x] Model Organization + relasi; User.organization() + isSuperAdmin()
+    [x] Trait BelongsToOrganization (global scope + auto-fill org_id)
+    [x] Support Tenancy (scoped singleton) + middleware SetCurrentOrganization
+    [x] Aktifkan spatie teams (team_id = organization_id)
+    [x] SuperAdmin = org_id null, otorisasi via Gate::before
+    [x] CertificateNumberGenerator pakai kode organisasi
+    [x] Seeder: org DISKOMINFO (dinas) + RELAWANTIK (komunitas) + user contoh
+    [x] Frontend: badge organisasi + switcher SuperAdmin di topbar
+    [x] Test: OrganizationScopingTest (isolasi lintas-org, dll) — LULUS
+
+[x] P2 — ALUR APPROVAL & ONBOARDING
+    [x] Kolom users.status/requested_role/approved_by/approved_at
+    [x] Kolom organizations.requested_by/approved_at/recommendation_letter_path
+    [x] Middleware EnsureApproved (alias 'approved') + halaman /pending
+    [x] Registrasi mandiri (RegisterController + RegisterRequest):
+        pilih org aktif / ajukan org baru; peran ditentukan server
+    [x] Validasi bersyarat K9: dinas WAJIB surat rekomendasi, komunitas tidak
+    [x] ApprovalService + ApprovalController (approve/reject/unduh surat)
+    [x] Frontend: Register.vue, Auth/Pending.vue, Approvals/Index.vue, nav item
+    [x] Share Inertia: status user, peran sintetis SuperAdmin, pending_approvals
+    [x] Test: ApprovalFlowTest (9 skenario) — LULUS
+
+[x] EKSTRA (di luar fase, permintaan langsung)
+    [x] Topbar dirapikan; dropdown user: data user asli + logout berfungsi
+    [x] Navigasi pakai Inertia <Link> (tanpa blink reload); unduh tetap <a>
+    [x] Publish repo publik GitHub: https://github.com/ziaulkamal/sigital
+        (.env & secret diamankan; .env.docker.example disediakan)
+    [x] Menu SuperAdmin lihat Penanda Tangan/Template/Log Audit (nav roles + SuperAdmin)
+    [x] Switcher organisasi gaya select2 (AppSelect searchable; nama panjang ellipsis)
+    [x] Guard: SuperAdmin "Semua org" tak bisa buat penanda tangan tanpa pilih org
+
+[x] TUGAS LANJUTAN (UI & onboarding) — 55 test LULUS, build OK
+    [x] T5 Hapus hardcode: brand via config('sigital.brand') + share Inertia 'app';
+        user sidebar/topbar dari shared auth.user (bukan 'Admin User'/'CRM Studio')
+    [x] T1 Dashboard data nyata: DashboardController (stats ter-scope + acara terbaru +
+        aktivitas audit); KPI peran-aware (SuperAdmin: organisasi/pending)
+    [x] T2 Notifikasi in-app: tabel notifications + Notification (UserRegistered ke SuperAdmin,
+        EventCreated ke SuperAdmin, EventJoinRequested ke owner, AccountDecision ke user);
+        dropdown bel di topbar + mark read
+    [x] T3 Keamanan akun: ganti password (P4) + 2FA (P5) terverifikasi; Nonaktifkan akun
+        (deactivate, wajib password → suspended + logout; login suspended diblokir)
+    [x] T4 Syarat mutlak registrasi: NIK (16 digit) + No. WhatsApp WAJIB; verifikasi OTP
+        WhatsApp via WAHA (driver pluggable, fallback log) sebelum menunggu approval
+    >> ENV baru: SIGITAL_BRAND_NAME/TAGLINE/LOGO, WHATSAPP_DRIVER, WAHA_BASE_URL/SESSION/API_KEY
+
+
+============================================================
+ BELUM DIKERJAKAN
+============================================================
+
+[x] P3 — SIGNATORY PER-USER + KONFIRMASI DUPLIKAT  (ukuran: M)
+    [x] signatories ter-scope org (sudah dari P1) + kolom created_by (migrasi baru)
+    [x] Normalisasi nama (buang gelar/tanda baca) + cari kandidat mirip ter-scope org
+        (SignatoryService::normalizeName + findSimilar; pencarian di PHP, list kecil)
+    [x] store() terima konfirmasi confirm=create_new; tanpa konfirmasi & ada kandidat
+        -> kembalikan kandidat lewat flash 'signatoryCandidates' (BUKAN 409: Inertia
+        memesan 409 untuk version-mismatch). Pola = pratinjau impor CSV.
+    [x] Frontend: modal "nama serupa sudah ada" (Gunakan ini / Tetap buat baru)
+    [x] Test: SignatoryDuplicateTest (5 skenario: normalisasi, konfirmasi, create_new,
+        nama unik langsung, cek ter-scope per-org) — LULUS
+
+[x] P4 — MANAJEMEN AKUN / PROFIL  (ukuran: S)
+    [x] ProfileController::update (nama/email) — Q4: ganti email LANGSUNG + audit
+        (tanpa verifikasi ulang); email unik kecuali milik sendiri
+    [x] ProfileController::updatePassword (ganti password + verifikasi password lama)
+    [x] Frontend: Settings.vue ditulis ulang -> Pengaturan (tab Akun + Keamanan)
+    [x] AuditLog: user.profile_updated (hanya kolom yang berubah), user.password_changed
+    [x] Menu Profil/Pengaturan topbar kini mengarah ke halaman akun nyata
+    [x] Test: ProfileManagementTest (5 skenario) — LULUS
+
+[x] P5 — MODUL 2FA  (ukuran: M)  — Q5: OPSIONAL per-user, mandiri (pragmarx/google2fa, tanpa Fortify)
+    [x] Migrasi users: two_factor_secret/recovery_codes/confirmed_at (cast encrypted)
+    [x] TwoFactorService: secret, QR SVG (simple-qrcode), verify TOTP, recovery codes
+    [x] TwoFactorController: enable -> confirm (kode) -> recovery codes; disable wajib password;
+        recoveryCodes (terbitkan ulang). AuditLog auth.2fa_enabled / auth.2fa_disabled
+    [x] Tantangan login: AuthenticatedSessionController tahan login (session login.2fa_user_id),
+        TwoFactorChallengeController (TOTP / recovery sekali pakai)
+    [x] Frontend: tab Keamanan (aktivasi QR + verifikasi + recovery codes + nonaktif),
+        Auth/TwoFactorChallenge.vue
+    [x] Test: TwoFactorTest (8 skenario) — LULUS
+
+[ ] P6 — TEMPLATE & BRANDING (LOGO KOP) PER-USER  (ukuran: M)
+    [x] templates ter-scope org (P1) + uploaded_by + background_mime (migrasi baru)
+    [x] Upload gambar latar (PNG/JPG/PDF) via TemplateService; posisi_field JSON
+        (Q6: gambar latar + posisi field; perancang drag-drop = v-next)
+    [x] Branding: upload logo_path + kop_path per organisasi (BrandingController)
+    [x] CertificatePdfRenderer: latar -> view 'certificates.canvas' (overlay koordinat) +
+        sisip logo/kop org di kepala (default.blade juga menampilkan logo/kop)
+    [x] Frontend: Templates/Index.vue (daftar/upload) + Pengaturan > Branding (tab)
+    [x] Test: TemplateBrandingTest (4 skenario; PDF terbit %PDF dgn latar+logo) — LULUS
+
+[x] P7 — KOLABORASI ACARA (JOIN & APPROVAL)  (ukuran: M)
+    [x] events.created_by + events.join_code; tabel event_members (owner|collaborator,
+        status pending/approved/rejected, UNIQUE(event_id,user_id))
+    [x] Pembuat acara otomatis owner (EventService); index/show disaring keanggotaan
+    [x] POST /events/join (Q8: via KODE UNDANGAN owner) -> permintaan pending
+    [x] POST /events/{event}/members/{member}/approve|reject (owner via EventPolicy; SuperAdmin)
+    [x] EventPolicy (view/update/delete/manageMembers); SuperAdmin via Gate::before.
+        Gating IDOR juga di Participant/Import/issueBatch (authorize 'view')
+    [x] Frontend: tombol "Gabung Acara" (modal kode) di Index + panel kolaborasi
+        (kode undangan + daftar anggota + approve/reject) di Show
+    [x] Test: EventCollaborationTest (7 skenario) + OrganizationScopingTest disesuaikan — LULUS
+    Catatan: kolaborasi HANYA dalam org yang sama (Q7) — global scope acara cukup
+
+
+============================================================
+ KEPUTUSAN TERBUKA YANG MASIH PERLU DIPUTUSKAN (NEXT-STEP §8)
+============================================================
+ [x] Q1 Person lintas-org        -> global, visibilitas dibatasi (DIPUTUSKAN)
+ [x] Q2 Pengajuan org baru        -> self-register + ajukan org (DIPUTUSKAN)
+ [x] Q3 Self-register vs undangan -> self-registration (DIPUTUSKAN)
+ [x] Q4 Verifikasi ulang email saat ganti email? -> cukup audit, langsung ganti (DIPUTUSKAN)
+ [x] Q5 2FA wajib/opsional? -> opsional per-user, mandiri google2fa (DIPUTUSKAN)
+ [x] Q6 Format template -> gambar latar + posisi field (drag-drop = v-next) (DIPUTUSKAN)
+ [x] Q7 Join acara lintas-org     -> hanya dalam org sama (DIPUTUSKAN)
+ [x] Q8 Penemuan acara -> via kode/undangan dari owner (DIPUTUSKAN)
+
+
+============================================================
+ DEFINITION OF DONE KESELURUHAN (NEXT-STEP §10)
+============================================================
+ [x] Data terisolasi per organisasi; SuperAdmin lihat semua          (P1)
+ [x] Akun baru tidak aktif sebelum di-approve SuperAdmin             (P2)
+ [x] Komunitas (RelawanTIK) menerbitkan sertifikat di segmennya      (P1)
+ [x] Signatory dikelola per-user dengan konfirmasi nama duplikat     (P3)
+ [x] User dapat ganti nama/email/password & mengaktifkan 2FA         (P4/P5)
+ [x] User dapat mengunggah & memakai template sendiri                (P6)
+ [x] Logo kop tampil pada sertifikat yang diterbitkan                (P6)
+ [x] Dinas wajib surat rekomendasi; komunitas tidak                  (P2)
+ [x] User dapat join acara; owner/SuperAdmin menyetujui              (P7)
+ [x] Aksi sensitif tercatat di AuditLog per organisasi               (P1-P7)
+ [x] Uji otorisasi lintas-org (IDOR) lulus  (scoping + EventPolicy objek)
+
+
+============================================================
+ CATATAN TEKNIS / UTANG TEKNIS
+============================================================
+ [x] `npm run build` sudah dijalankan (mencakup perubahan Inertia <Link> + modal P3)
+ [x] Menu topbar "Profil" & "Pengaturan" -> halaman akun nyata (P4 selesai)
+ [x] EventPolicy dibuat (view/update/delete/manageMembers) + gating IDOR di
+     Participant/Import/issueBatch. Signatory/Template/Certificate cukup terlindung
+     global scope org (akses objek lintas-org otomatis 404); policy objek = jika perlu nanti.
+ [ ] Email approval pakai mailer 'log' (dev). Atur SMTP untuk produksi.
+ [ ] Perancang posisi field drag-drop (v-next) — saat ini koordinat JSON + default.
+
+------------------------------------------------------------
+ SEMUA FASE SELESAI. Lanjutan opsional (v-next): perancang template visual,
+ SMTP produksi, policy objek granular untuk signatory/template bila dibutuhkan.
+------------------------------------------------------------

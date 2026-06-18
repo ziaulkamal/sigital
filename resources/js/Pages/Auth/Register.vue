@@ -13,6 +13,17 @@
 
             <div class="auth-form__row-2">
                 <div class="auth-form__field">
+                    <label class="auth-form__label">NIK</label>
+                    <AppInput v-model="form.nik" placeholder="16 digit NIK" :error="form.errors.nik" />
+                </div>
+                <div class="auth-form__field">
+                    <label class="auth-form__label">No. WhatsApp</label>
+                    <AppInput v-model="form.phone" placeholder="0812xxxxxxx" :error="form.errors.phone" />
+                </div>
+            </div>
+
+            <div class="auth-form__row-2">
+                <div class="auth-form__field">
                     <label class="auth-form__label">Password</label>
                     <AppInput v-model="form.password" type="password" placeholder="Min. 8 karakter" :error="form.errors.password" />
                 </div>
@@ -103,7 +114,7 @@
         <template #footer>
             <span style="color: var(--color-text-muted); font-size: 13px;">
                 Sudah punya akun?
-                <a href="/login" style="color: #6366f1; font-weight: 600;">Masuk</a>
+                <Link href="/login" style="color: #6366f1; font-weight: 600;">Masuk</Link>
             </span>
         </template>
     </AuthLayout>
@@ -111,7 +122,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import AuthLayout   from '@/Layouts/AuthLayout.vue';
 import AppInput     from '@/Components/App/AppInput.vue';
 import AppSelect    from '@/Components/App/AppSelect.vue';
@@ -123,13 +134,14 @@ interface OrgOption { id: number; nama: string; kode: string; type: string }
 const props = defineProps<{ organizations: OrgOption[] }>();
 
 const form = useForm<{
-    name: string; email: string; password: string; password_confirmation: string;
+    name: string; email: string; nik: string; phone: string;
+    password: string; password_confirmation: string;
     org_mode: 'existing' | 'new';
     organization_id: number | '';
     org_nama: string; org_kode: string; org_type: 'dinas' | 'komunitas';
     recommendation_letter: File | null;
 }>({
-    name: '', email: '', password: '', password_confirmation: '',
+    name: '', email: '', nik: '', phone: '', password: '', password_confirmation: '',
     org_mode: 'existing',
     organization_id: '',
     org_nama: '', org_kode: '', org_type: 'dinas',

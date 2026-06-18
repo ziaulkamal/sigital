@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue';
+import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
     variant:  { type: String,  default: 'primary' }, // primary | secondary | ghost | danger | outline | success | warning
@@ -40,14 +41,23 @@ const props = defineProps({
     disabled: { type: Boolean, default: false },
     iconOnly: { type: Boolean, default: false },
     href:     { type: String,  default: null },
+    // Set true untuk tautan unduh/eksternal → tetap <a> biasa (bukan navigasi Inertia).
+    external: { type: Boolean, default: false },
 });
+
+// Link internal → komponen Inertia (navigasi tanpa reload); unduh/eksternal → <a> biasa.
+const isInertiaLink = computed<boolean>(() => !!props.href && !props.external);
 
 const rawAttrs = useAttrs();
 const attrs = computed(() => ({
     ...rawAttrs,
-    ...(props.tag === 'a' || props.href ? { href: props.href } : { type: (rawAttrs.type as string) ?? 'button' }),
+    ...(props.href ? { href: props.href } : { type: (rawAttrs.type as string) ?? 'button' }),
 }));
-const tag = computed<string>(() => props.href ? 'a' : props.tag);
+const tag = computed(() => {
+    if (isInertiaLink.value) return Link;
+    if (props.href || props.tag === 'a') return 'a';
+    return props.tag;
+});
 </script>
 
 <style scoped>

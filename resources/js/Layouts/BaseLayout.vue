@@ -15,11 +15,12 @@
             v-model:collapsed="sidebarCollapsed"
             v-model:mobile-open="sidebarMobileOpen"
             :nav-groups="resolvedNavGroups"
-            :user="user"
+            :user="currentUser"
             :is-mobile="isMobile"
             :is-dark="isDark"
-            :app-name="appName"
-            :app-subtitle="appSubtitle"
+            :app-name="brand.name"
+            :app-subtitle="brand.tagline"
+            :app-logo="brand.logo"
             @update:collapsed="onCollapsedChange"
         />
 
@@ -28,12 +29,11 @@
             <AppTopbar
                 :sidebar-collapsed="sidebarCollapsed"
                 :is-dark="isDark"
-                :user="user"
-                :notification-count="notificationCount"
+                :user="currentUser"
+                :notification-count="unreadCount"
                 :is-mobile="isMobile"
                 @toggle-sidebar="toggleSidebar"
                 @toggle-theme="toggleTheme"
-                @open-notifications="$emit('open-notifications')"
             />
 
             <main class="layout-main">
@@ -81,8 +81,8 @@ type LayoutUser = { name?: string; email?: string; avatar?: string } | null;
 const props = defineProps({
     navGroups:         { type: Array as () => NavGroup[] | null, default: null },
     user:              { type: Object as () => LayoutUser,       default: null },
-    appName:           { type: String, default: 'E-Gov CRM' },
-    appSubtitle:       { type: String, default: 'Laravel + Tailwinds + Vue' },
+    appName:           { type: String, default: 'SIGITAL' },
+    appSubtitle:       { type: String, default: 'Sertifikat Digital' },
     notificationCount: { type: Number, default: 0 },
 });
 
@@ -140,6 +140,18 @@ onUnmounted(() => window.removeEventListener('resize', handleResize));
 const page = usePage();
 const userRoles = computed<string[]>(
     () => ((page.props.auth as { user?: { roles?: string[] } })?.user?.roles ?? []),
+);
+
+// User asli & brand dari shared props (HandleInertiaRequests) — tanpa hardcode.
+const currentUser = computed<LayoutUser>(
+    () => ((page.props.auth as { user?: LayoutUser })?.user ?? props.user),
+);
+const brand = computed(() => {
+    const a = page.props.app as { name?: string; tagline?: string; logo?: string | null } | undefined;
+    return { name: a?.name ?? props.appName, tagline: a?.tagline ?? props.appSubtitle, logo: a?.logo ?? null };
+});
+const unreadCount = computed<number>(
+    () => ((page.props.notifications as { unread?: number } | null)?.unread ?? props.notificationCount),
 );
 
 /** Item tampil bila tak punya batasan peran, atau peran user cocok. */

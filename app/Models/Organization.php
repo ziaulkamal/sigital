@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'nama', 'kode', 'type', 'is_active',
+    'nama', 'kode', 'type', 'is_active', 'logo_path', 'kop_path',
     'requested_by', 'approved_at', 'recommendation_letter_path',
 ])]
 class Organization extends Model

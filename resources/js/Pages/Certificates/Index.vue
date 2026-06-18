@@ -67,7 +67,7 @@
                 </table>
 
                 <div v-if="certificates.links.length > 3" class="pagination">
-                    <component :is="link.url ? 'a' : 'span'" v-for="(link, i) in certificates.links" :key="i"
+                    <component :is="link.url ? Link : 'span'" v-for="(link, i) in certificates.links" :key="i"
                         :href="link.url || undefined" class="pagination__link"
                         :class="{ 'pagination__link--active': link.active, 'pagination__link--disabled': !link.url }"
                         v-html="link.label" />
@@ -79,7 +79,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, Link } from '@inertiajs/vue3';
 import { SearchIcon, DownloadIcon, MailIcon, BanIcon, XIcon } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import AppInput from '@/Components/App/AppInput.vue';

@@ -6,6 +6,29 @@
  */
 
 return [
+    // Identitas/brand aplikasi (dipakai di login, sidebar, topbar — tanpa hardcode di Vue).
+    'brand' => [
+        'name' => env('SIGITAL_BRAND_NAME', 'SIGITAL'),
+        'tagline' => env('SIGITAL_BRAND_TAGLINE', 'Sertifikat Digital'),
+        // Path logo relatif ke disk public (mis. 'branding/app-logo.png'). Null = pakai ikon bawaan.
+        'logo' => env('SIGITAL_BRAND_LOGO'),
+    ],
+
+    // Gerbang WhatsApp untuk OTP verifikasi akun (anti akun palsu).
+    // Driver 'waha' = WhatsApp HTTP API (https://waha.devlike.pro/) self-host; 'log' = tulis ke log (dev).
+    'whatsapp' => [
+        'driver' => env('WHATSAPP_DRIVER', 'waha'),
+        'waha' => [
+            'base_url' => env('WAHA_BASE_URL', 'http://localhost:3000'),
+            'session' => env('WAHA_SESSION', 'default'),
+            'api_key' => env('WAHA_API_KEY'), // header X-Api-Key bila di-set
+        ],
+        'otp' => [
+            'length' => 6,
+            'ttl_minutes' => 10,
+        ],
+    ],
+
     // Kode instansi pada nomor sertifikat (nomenklatur final — lihat Pertanyaan Terbuka PRD).
     'instansi_kode' => env('SIGITAL_INSTANSI_KODE', 'DISKOMINFO'),
     'instansi_nama' => env('SIGITAL_INSTANSI_NAMA', 'Dinas Komunikasi dan Informatika'),

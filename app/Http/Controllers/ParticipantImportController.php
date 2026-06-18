@@ -19,6 +19,7 @@ class ParticipantImportController extends Controller
     /** Langkah 1 — kembalikan hasil pratinjau (tanpa menyimpan). */
     public function preview(Request $request, Event $event): RedirectResponse
     {
+        $this->authorize('view', $event); // P7 — hanya owner/member acara
         $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:5120']]);
 
         try {
@@ -33,6 +34,7 @@ class ParticipantImportController extends Controller
     /** Langkah 2 — simpan baris yang dipilih. */
     public function store(Request $request, Event $event): RedirectResponse
     {
+        $this->authorize('view', $event); // P7 — hanya owner/member acara
         $data = $request->validate([
             'rows' => ['required', 'array'],
             'rows.*.nama' => ['required', 'string'],

@@ -2,7 +2,7 @@
     <!-- ── SINGLE item ── -->
     <template v-if="!hasChildren">
         <component
-            :is="item.href ? 'a' : 'button'"
+            :is="item.href ? Link : 'button'"
             :href="item.href ?? undefined"
             class="nav-item"
             :class="[
@@ -123,6 +123,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import { ChevronRight } from '@lucide/vue';
 
 interface NavItem {

@@ -7,7 +7,7 @@
         <div class="page">
             <div class="page__header">
                 <div>
-                    <a href="/events" class="page__back">← Acara</a>
+                    <Link href="/events" class="page__back">← Acara</Link>
                     <h1 class="page__title">{{ event.nama }}</h1>
                     <p class="page__sub">{{ event.kode || '—' }} · {{ event.lokasi || 'Tanpa lokasi' }}</p>
                 </div>
@@ -98,6 +98,39 @@
                     </template>
                 </DataTable>
             </div>
+
+            <!-- Kolaborasi acara (P7) -->
+            <div class="page__card">
+                <div class="card__toolbar">
+                    <h2 class="card__title">Kolaborasi ({{ event.members.length }})</h2>
+                    <div v-if="event.is_owner && event.join_code" class="collab__code">
+                        <span class="collab__code-label">Kode undangan:</span>
+                        <code class="collab__code-val">{{ event.join_code }}</code>
+                        <button class="collab__copy" title="Salin" @click="copyCode"><CopyIcon :size="14" /></button>
+                    </div>
+                </div>
+
+                <table class="collab__table">
+                    <thead><tr><th>Nama</th><th>Peran</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                        <tr v-for="m in event.members" :key="m.id">
+                            <td>
+                                <span class="collab__name">{{ m.user?.name ?? '—' }}</span>
+                                <span class="collab__email">{{ m.user?.email }}</span>
+                            </td>
+                            <td><AppBadge :color="m.role === 'owner' ? 'info' : 'default'" size="sm">{{ m.role === 'owner' ? 'Pemilik' : 'Kolaborator' }}</AppBadge></td>
+                            <td><AppBadge :color="memberStatusColor(m.status)" size="sm">{{ memberStatusLabel(m.status) }}</AppBadge></td>
+                            <td class="collab__actions">
+                                <template v-if="event.is_owner && m.status === 'pending'">
+                                    <button class="icon-btn" title="Setujui" @click="approveMember(m.id)"><CheckIcon :size="15" /></button>
+                                    <button class="icon-btn icon-btn--danger" title="Tolak" @click="rejectMember(m.id)"><XIcon :size="15" /></button>
+                                </template>
+                            </td>
+                        </tr>
+                        <tr v-if="!event.members.length"><td colspan="4" class="muted">Belum ada anggota.</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Modal tambah manual -->
@@ -155,8 +188,8 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, onUnmounted } from 'vue';
-import { router, useForm, usePage } from '@inertiajs/vue3';
-import { PencilIcon, UploadIcon, UserPlusIcon, AwardIcon, DownloadIcon, Trash2Icon } from '@lucide/vue';
+import { router, useForm, usePage, Link } from '@inertiajs/vue3';
+import { PencilIcon, UploadIcon, UserPlusIcon, AwardIcon, DownloadIcon, Trash2Icon, CopyIcon, CheckIcon, XIcon } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import DataTable from '@/Components/App/DataTable.vue';
 import AppButton from '@/Components/App/AppButton.vue';
@@ -169,7 +202,8 @@ import { navGroups } from '@/data/navGroups';
 
 interface Cert { id: number; nomor: string; status: string; }
 interface Participant { registration_id: number; nama: string; email: string | null; sumber: string; status_kehadiran: string; certificate: Cert | null; }
-interface EventData { id: number; nama: string; kode: string | null; lokasi: string | null; status: string; can_issue: boolean; template: { id: number; nama: string } | null; signatories: { id: number; nama: string; jabatan: string }[]; }
+interface Member { id: number; user: { id: number; name: string; email: string } | null; role: string; status: string; }
+interface EventData { id: number; nama: string; kode: string | null; lokasi: string | null; status: string; can_issue: boolean; template: { id: number; nama: string } | null; signatories: { id: number; nama: string; jabatan: string }[]; is_owner: boolean; join_code: string | null; members: Member[]; }
 interface PreviewRow { baris: number; nama: string; email: string; status: string; pesan: string | null; }
 interface Preview { rows: PreviewRow[]; summary: { ok: number; duplikat: number; error: number }; }
 
@@ -200,6 +234,23 @@ function removeParticipant(row: Record<string, unknown>) {
 }
 function issueOne(row: Record<string, unknown>) {
     router.post(`/registrations/${row.registration_id}/issue`, {}, { preserveScroll: true });
+}
+
+/* ---- Kolaborasi (P7) ---- */
+function memberStatusColor(s: string) {
+    return ({ pending: 'warning', approved: 'success', rejected: 'danger' } as Record<string, string>)[s] ?? 'default';
+}
+function memberStatusLabel(s: string) {
+    return ({ pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' } as Record<string, string>)[s] ?? s;
+}
+function approveMember(id: number) {
+    router.post(`/events/${props.event.id}/members/${id}/approve`, {}, { preserveScroll: true });
+}
+function rejectMember(id: number) {
+    router.post(`/events/${props.event.id}/members/${id}/reject`, {}, { preserveScroll: true });
+}
+function copyCode() {
+    if (props.event.join_code) navigator.clipboard?.writeText(props.event.join_code);
 }
 
 /* ---- Impor CSV ---- */
@@ -308,5 +359,15 @@ function rowColor(s: string) { return ({ ok: 'success', duplikat: 'warning', err
 .import__note { font-size: 12.5px; color: var(--color-text-muted); }
 .r--error { background: rgba(239, 68, 68, 0.05); }
 .err { font-size: 12px; color: #dc2626; }
+.collab__code { display: flex; align-items: center; gap: 8px; }
+.collab__code-label { font-size: 12.5px; color: var(--color-text-muted); }
+.collab__code-val { font-family: var(--font-mono); font-size: 13px; background: var(--color-bg-subtle); padding: 3px 8px; border-radius: 6px; letter-spacing: 1px; }
+.collab__copy { display: inline-flex; padding: 5px; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); cursor: pointer; }
+.collab__copy:hover { color: var(--color-text-primary); }
+.collab__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.collab__table th, .collab__table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--color-border); }
+.collab__name { font-weight: 600; color: var(--color-text-primary); }
+.collab__email { display: block; font-size: 12px; color: var(--color-text-subtle); }
+.collab__actions { display: flex; gap: 6px; justify-content: flex-end; }
 @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 </style>
