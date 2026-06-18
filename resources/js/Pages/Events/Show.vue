@@ -198,6 +198,7 @@ import AppModal from '@/Components/App/AppModal.vue';
 import AppInput from '@/Components/App/AppInput.vue';
 import AppProgressBar from '@/Components/App/AppProgressBar.vue';
 import FlashBanner from '@/Components/FlashBanner.vue';
+import { swalConfirm } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
 
 interface Cert { id: number; nomor: string; status: string; }
@@ -227,10 +228,14 @@ function addManual() {
 }
 
 /* ---- Hapus & terbit satuan ---- */
-function removeParticipant(row: Record<string, unknown>) {
-    if (confirm(`Hapus ${row.nama} dari acara?`)) {
-        router.delete(`/participants/${row.registration_id}`, { preserveScroll: true });
-    }
+async function removeParticipant(row: Record<string, unknown>) {
+    const ok = await swalConfirm({
+        title: 'Hapus peserta?',
+        text: `"${row.nama}" akan dihapus dari acara ini.`,
+        confirmText: 'Ya, hapus',
+        danger: true,
+    });
+    if (ok) router.delete(`/participants/${row.registration_id}`, { preserveScroll: true });
 }
 function issueOne(row: Record<string, unknown>) {
     router.post(`/registrations/${row.registration_id}/issue`, {}, { preserveScroll: true });
@@ -246,8 +251,14 @@ function memberStatusLabel(s: string) {
 function approveMember(id: number) {
     router.post(`/events/${props.event.id}/members/${id}/approve`, {}, { preserveScroll: true });
 }
-function rejectMember(id: number) {
-    router.post(`/events/${props.event.id}/members/${id}/reject`, {}, { preserveScroll: true });
+async function rejectMember(id: number) {
+    const ok = await swalConfirm({
+        title: 'Tolak permintaan gabung?',
+        text: 'Pengguna ini tidak akan menjadi kolaborator acara.',
+        confirmText: 'Ya, tolak',
+        danger: true,
+    });
+    if (ok) router.post(`/events/${props.event.id}/members/${id}/reject`, {}, { preserveScroll: true });
 }
 function copyCode() {
     if (props.event.join_code) navigator.clipboard?.writeText(props.event.join_code);

@@ -30,6 +30,11 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // Profil lengkap secara default (NIK 16 digit + HP 62…) agar user terapprove
+            // tidak terjebak gate EnsureProfileComplete pada test fitur. Gunakan state
+            // needsProfile() untuk menguji alur "lengkapi profil".
+            'nik' => fake()->unique()->numerify('################'),
+            'phone' => '628'.fake()->numerify('#########'),
         ];
     }
 
@@ -40,6 +45,15 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /** Akun yang belum melengkapi profil (NIK & HP kosong) — untuk uji gate lengkapi profil. */
+    public function needsProfile(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'nik' => null,
+            'phone' => null,
         ]);
     }
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\CompleteProfileController;
 use App\Http\Controllers\Auth\PhoneVerificationController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
@@ -65,15 +66,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/verify-phone/resend', [PhoneVerificationController::class, 'resend'])->name('verify-phone.resend');
 
     // Halaman tunggu approval — di luar gate 'approved' agar user pending bisa melihatnya (P2).
-    // Nomor WhatsApp wajib terverifikasi dulu (bila user punya nomor & belum verifikasi).
-    Route::get('/pending', function () {
-        $user = request()->user();
-        if ($user->phone && ! $user->hasVerifiedPhone()) {
-            return redirect()->route('verify-phone');
-        }
+    Route::get('/pending', fn () => Inertia::render('Auth/Pending'))->name('pending');
 
-        return Inertia::render('Auth/Pending');
-    })->name('pending');
+    // Lengkapi profil wajib (NIK + HP) setelah di-approve — di luar gate 'profile.complete'
+    // agar tak terjadi loop redirect. EnsureApproved tetap memastikan akun sudah aktif.
+    Route::middleware('approved')->group(function () {
+        Route::get('/complete-profile', [CompleteProfileController::class, 'create'])->name('profile.complete');
+        Route::post('/complete-profile', [CompleteProfileController::class, 'store']);
+    });
 });
 
 /*
@@ -81,7 +81,7 @@ Route::middleware('auth')->group(function () {
 | Aplikasi (wajib auth + akun sudah di-approve SuperAdmin)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'approved'])->group(function () {
+Route::middleware(['auth', 'approved', 'profile.complete'])->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 

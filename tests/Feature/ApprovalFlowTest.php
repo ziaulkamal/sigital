@@ -53,12 +53,12 @@ class ApprovalFlowTest extends TestCase
             'nik' => '3201010101010001', 'phone' => '081234567801',
             'password' => 'password123', 'password_confirmation' => 'password123',
             'org_mode' => 'new', 'org_nama' => 'Relawan X', 'org_kode' => 'RELX', 'org_type' => 'komunitas',
-        ])->assertRedirect('/verify-phone');
+        ])->assertRedirect('/pending');
 
         $user = User::where('email', 'budi@test.local')->first();
         $this->assertNotNull($user);
         $this->assertSame(User::STATUS_PENDING, $user->status);
-        $this->assertSame('3201010101010001', $user->nik);
+        $this->assertNull($user->nik); // NIK dilengkapi setelah di-approve, bukan saat registrasi
         $this->assertSame('Admin', $user->requested_role); // pengaju org baru → calon Admin
         $this->assertFalse($user->organization->is_active);
     }
@@ -85,7 +85,7 @@ class ApprovalFlowTest extends TestCase
             'password' => 'password123', 'password_confirmation' => 'password123',
             'org_mode' => 'new', 'org_nama' => 'Dinas Y', 'org_kode' => 'DINY', 'org_type' => 'dinas',
             'recommendation_letter' => UploadedFile::fake()->create('surat.pdf', 120, 'application/pdf'),
-        ])->assertRedirect('/verify-phone');
+        ])->assertRedirect('/pending');
 
         $org = Organization::where('kode', 'DINY')->first();
         $this->assertNotNull($org->recommendation_letter_path);
@@ -101,7 +101,7 @@ class ApprovalFlowTest extends TestCase
             'nik' => '3201010101010004', 'phone' => '081234567804',
             'password' => 'password123', 'password_confirmation' => 'password123',
             'org_mode' => 'existing', 'organization_id' => $org->id,
-        ])->assertRedirect('/verify-phone');
+        ])->assertRedirect('/pending');
 
         $user = User::where('email', 'joni@test.local')->first();
         $this->assertSame('Operator', $user->requested_role);
@@ -163,7 +163,7 @@ class ApprovalFlowTest extends TestCase
     {
         $org = Organization::create(['nama' => 'Org', 'kode' => 'ORG', 'type' => 'dinas', 'is_active' => true]);
         $operator = User::create(['name' => 'Op', 'email' => 'op@test.local', 'password' => 'password']);
-        $operator->forceFill(['organization_id' => $org->id, 'status' => User::STATUS_APPROVED])->save();
+        $operator->forceFill(['organization_id' => $org->id, 'status' => User::STATUS_APPROVED, 'nik' => fake()->unique()->numerify('################'), 'phone' => '628'.fake()->numerify('#########')])->save();
         app(PermissionRegistrar::class)->setPermissionsTeamId($org->id);
         $operator->assignRole('Operator');
 

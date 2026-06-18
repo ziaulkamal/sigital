@@ -163,6 +163,7 @@ import AppInput from '@/Components/App/AppInput.vue';
 import AppButton from '@/Components/App/AppButton.vue';
 import AppDivider from '@/Components/App/AppDivider.vue';
 import FlashBanner from '@/Components/FlashBanner.vue';
+import { swalConfirm } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
 import { UserIcon, ShieldIcon, ImageIcon } from '@lucide/vue';
 
@@ -210,9 +211,14 @@ function submitPassword() {
 
 // ── Nonaktifkan akun ──
 const deactivateForm = useForm({ current_password: '' });
-function deactivate() {
-    if (!confirm('Yakin menonaktifkan akun? Anda akan keluar dan tidak bisa login lagi.')) return;
-    deactivateForm.delete('/settings/account');
+async function deactivate() {
+    const ok = await swalConfirm({
+        title: 'Nonaktifkan akun?',
+        text: 'Anda akan keluar dan tidak bisa login lagi.',
+        confirmText: 'Ya, nonaktifkan',
+        danger: true,
+    });
+    if (ok) deactivateForm.delete('/settings/account');
 }
 
 // ── 2FA ──

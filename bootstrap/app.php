@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureApproved;
+use App\Http\Middleware\EnsureProfileComplete;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetCurrentOrganization;
 use Illuminate\Foundation\Application;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'approved' => EnsureApproved::class,
+            'profile.complete' => EnsureProfileComplete::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

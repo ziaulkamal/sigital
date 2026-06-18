@@ -37,9 +37,8 @@ class RegisterRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
 
-            // Syarat mutlak: NIK (16 digit) + nomor WhatsApp (akan diverifikasi OTP).
-            'nik' => ['required', 'digits:16', 'unique:users,nik'],
-            'phone' => ['required', 'string', 'regex:/^(\+?62|0)8[0-9]{7,13}$/'],
+            // NIK & nomor HP TIDAK diminta saat registrasi awal — dilengkapi setelah
+            // akun di-approve (lihat EnsureProfileComplete + CompleteProfileController).
 
             'org_mode' => ['required', Rule::in(['existing', 'new'])],
 
@@ -64,9 +63,6 @@ class RegisterRequest extends FormRequest
         return [
             'recommendation_letter.required_if' => 'Pendaftaran dinas wajib melampirkan surat rekomendasi penunjukan.',
             'organization_id.required_if' => 'Pilih organisasi yang ingin Anda ikuti.',
-            'nik.digits' => 'NIK harus 16 digit angka.',
-            'nik.unique' => 'NIK ini sudah terdaftar.',
-            'phone.regex' => 'Nomor WhatsApp tidak valid (contoh: 081234567890).',
         ];
     }
 }

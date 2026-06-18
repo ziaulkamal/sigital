@@ -73,6 +73,7 @@ import AppInput from '@/Components/App/AppInput.vue';
 import AppTextarea from '@/Components/App/AppTextarea.vue';
 import AppBadge from '@/Components/App/AppBadge.vue';
 import FlashBanner from '@/Components/FlashBanner.vue';
+import { swalConfirm } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
 
 interface Template { id: number; nama: string; deskripsi: string | null; background: string | null; is_global: boolean; is_active: boolean; }
@@ -121,10 +122,14 @@ function submit() {
     }
 }
 
-function deactivate(row: Record<string, unknown>) {
-    if (confirm(`Nonaktifkan template ${row.nama}?`)) {
-        useForm({}).delete(`/templates/${row.id}`);
-    }
+async function deactivate(row: Record<string, unknown>) {
+    const ok = await swalConfirm({
+        title: 'Nonaktifkan template?',
+        text: `Template "${row.nama}" tidak akan bisa dipilih lagi.`,
+        confirmText: 'Ya, nonaktifkan',
+        danger: true,
+    });
+    if (ok) useForm({}).delete(`/templates/${row.id}`);
 }
 </script>
 

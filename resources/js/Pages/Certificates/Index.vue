@@ -86,7 +86,10 @@ import AppInput from '@/Components/App/AppInput.vue';
 import AppSelect from '@/Components/App/AppSelect.vue';
 import AppBadge from '@/Components/App/AppBadge.vue';
 import FlashBanner from '@/Components/FlashBanner.vue';
+import { swalConfirm, useSwal } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
+
+const { Swal } = useSwal();
 
 interface CertRow { id: number; nomor: string; nama: string; acara: string; status: string; issued_at: string | null; has_email: boolean; }
 interface PageLink { url: string | null; label: string; active: boolean; }
@@ -135,14 +138,29 @@ function reset() {
 function cleaned() {
     return Object.fromEntries(Object.entries(f).filter(([, v]) => v !== '' && v !== null));
 }
-function sendEmail(c: CertRow) {
-    if (confirm(`Kirim sertifikat ke email ${c.nama}?`)) {
-        router.post(`/certificates/${c.id}/email`, {}, { preserveScroll: true });
-    }
+async function sendEmail(c: CertRow) {
+    const ok = await swalConfirm({
+        title: 'Kirim sertifikat?',
+        text: `Sertifikat akan dikirim ke email ${c.nama}.`,
+        confirmText: 'Ya, kirim',
+    });
+    if (ok) router.post(`/certificates/${c.id}/email`, {}, { preserveScroll: true });
 }
-function revoke(c: CertRow) {
-    const alasan = prompt(`Alasan pencabutan untuk ${c.nomor}:`) ?? '';
-    router.post(`/certificates/${c.id}/revoke`, { alasan }, { preserveScroll: true });
+async function revoke(c: CertRow) {
+    const { value: alasan, isConfirmed } = await Swal.fire({
+        icon: 'warning',
+        title: `Cabut sertifikat ${c.nomor}?`,
+        input: 'text',
+        inputLabel: 'Alasan pencabutan',
+        inputPlaceholder: 'Tulis alasan…',
+        showCancelButton: true,
+        reverseButtons: true,
+        confirmButtonText: 'Cabut',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#ef4444',
+        inputValidator: (v) => (v ? null : 'Alasan wajib diisi.'),
+    });
+    if (isConfirmed) router.post(`/certificates/${c.id}/revoke`, { alasan }, { preserveScroll: true });
 }
 </script>
 

@@ -42,7 +42,7 @@ class OrganizationScopingTest extends TestCase
             'email' => $email,
             'password' => 'password',
         ]);
-        $user->forceFill(['organization_id' => $org->id])->save();
+        $user->forceFill(['organization_id' => $org->id, 'nik' => fake()->unique()->numerify('################'), 'phone' => '628'.fake()->numerify('#########')])->save();
 
         app(PermissionRegistrar::class)->setPermissionsTeamId($org->id);
         $user->assignRole('Operator');

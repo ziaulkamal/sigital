@@ -107,6 +107,7 @@ import AppModal from '@/Components/App/AppModal.vue';
 import AppInput from '@/Components/App/AppInput.vue';
 import AppBadge from '@/Components/App/AppBadge.vue';
 import FlashBanner from '@/Components/FlashBanner.vue';
+import { swalConfirm } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
 
 interface Signatory { id: number; nama: string; jabatan: string; gambar_ttd: string | null; is_active: boolean; }
@@ -212,10 +213,14 @@ function finishCreate() {
     form.clearErrors();
 }
 
-function deactivate(row: Record<string, unknown>) {
-    if (confirm(`Nonaktifkan ${row.nama}?`)) {
-        useForm({}).delete(`/signatories/${row.id}`);
-    }
+async function deactivate(row: Record<string, unknown>) {
+    const ok = await swalConfirm({
+        title: 'Nonaktifkan penanda tangan?',
+        text: `"${row.nama}" tidak akan bisa dipilih lagi pada acara.`,
+        confirmText: 'Ya, nonaktifkan',
+        danger: true,
+    });
+    if (ok) useForm({}).delete(`/signatories/${row.id}`);
 }
 </script>
 

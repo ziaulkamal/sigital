@@ -33,7 +33,7 @@ class TwoFactorTest extends TestCase
     {
         $org = Organization::create(['nama' => 'Dinas A', 'kode' => 'DINASA', 'type' => 'dinas']);
         $user = User::create(['name' => 'U', 'email' => 'u@test.local', 'password' => 'password123']);
-        $user->forceFill(['organization_id' => $org->id])->save();
+        $user->forceFill(['organization_id' => $org->id, 'nik' => fake()->unique()->numerify('################'), 'phone' => '628'.fake()->numerify('#########')])->save();
 
         return $user;
     }

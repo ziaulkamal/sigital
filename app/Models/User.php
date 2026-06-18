@@ -3,9 +3,11 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Phone;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -71,6 +73,23 @@ class User extends Authenticatable
     public function hasVerifiedPhone(): bool
     {
         return $this->phone_verified_at !== null;
+    }
+
+    /**
+     * Profil wajib dilengkapi (NIK + nomor HP) sebelum memakai fitur.
+     * Berlaku untuk user terapprove non-SuperAdmin yang NIK/HP-nya masih kosong.
+     */
+    public function needsProfileCompletion(): bool
+    {
+        return $this->isApproved()
+            && ! $this->isSuperAdmin()
+            && (blank($this->nik) || blank($this->phone));
+    }
+
+    /** Normalisasi nomor HP saat di-set (08… → 628…); dibaca apa adanya. */
+    protected function phone(): Attribute
+    {
+        return Attribute::set(fn (?string $value) => Phone::normalize($value));
     }
 
     /**

@@ -54,7 +54,7 @@ class TemplateBrandingTest extends TestCase
     private function adminFor(Organization $org): User
     {
         $user = User::create(['name' => "Admin {$org->kode}", 'email' => "admin-{$org->kode}@test.local", 'password' => 'password']);
-        $user->forceFill(['organization_id' => $org->id])->save();
+        $user->forceFill(['organization_id' => $org->id, 'nik' => fake()->unique()->numerify('################'), 'phone' => '628'.fake()->numerify('#########')])->save();
         app(PermissionRegistrar::class)->setPermissionsTeamId($org->id);
         $user->assignRole('Admin');
 
