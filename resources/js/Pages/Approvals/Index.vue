@@ -4,7 +4,7 @@
     pratinjau surat rekomendasi (wajib untuk dinas, K9).
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Persetujuan Akun">
         <div class="page">
             <div class="page__header">
                 <div>

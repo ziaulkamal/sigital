@@ -4,7 +4,7 @@
     Perancang posisi field drag-drop = v-next; koordinat memakai default bila kosong.
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Template Sertifikat">
         <div class="page">
             <div class="page__header">
                 <div>

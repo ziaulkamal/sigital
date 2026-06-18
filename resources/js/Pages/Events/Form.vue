@@ -3,7 +3,7 @@
     Form buat/ubah acara: jadwal, lokasi, template, dan penetapan penanda tangan.
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Form Acara">
         <div class="page">
             <div class="page__header">
                 <div>
@@ -24,16 +24,31 @@
 
                 <div class="ev-form__field">
                     <label class="ev-form__label">Penanda Tangan</label>
-                    <p class="ev-form__hint">Pilih satu atau lebih. Urutan mengikuti urutan pemilihan.</p>
-                    <div class="ev-form__sigs">
-                        <label v-for="s in signatoryOptions" :key="s.id" class="ev-form__sig"
-                            :class="{ 'ev-form__sig--on': form.signatory_ids.includes(s.id) }">
-                            <input type="checkbox" :value="s.id" v-model="form.signatory_ids" />
-                            <span><strong>{{ s.nama }}</strong><br><small>{{ s.jabatan }}</small></span>
-                        </label>
-                        <p v-if="!signatoryOptions.length" class="ev-form__empty">
-                            Belum ada penanda tangan. <Link href="/signatories">Tambah dulu →</Link>
-                        </p>
+
+                    <!-- Ada penanda tangan: daftar pilihan -->
+                    <template v-if="signatoryOptions.length">
+                        <p class="ev-form__hint">Pilih satu atau lebih. Urutan mengikuti urutan pemilihan.</p>
+                        <div class="ev-form__sigs">
+                            <label v-for="s in signatoryOptions" :key="s.id" class="ev-form__sig"
+                                :class="{ 'ev-form__sig--on': form.signatory_ids.includes(s.id) }">
+                                <input type="checkbox" :value="s.id" v-model="form.signatory_ids" />
+                                <span><strong>{{ s.nama }}</strong><br><small>{{ s.jabatan }}</small></span>
+                            </label>
+                        </div>
+                    </template>
+
+                    <!-- Belum ada penanda tangan: CTA dipertegas -->
+                    <div v-else class="ev-form__empty">
+                        <div class="ev-form__empty-icon">
+                            <PenLine :size="22" />
+                        </div>
+                        <div class="ev-form__empty-text">
+                            <strong>Belum ada penanda tangan</strong>
+                            <span>Tambahkan minimal satu penanda tangan terlebih dahulu sebelum membuat acara.</span>
+                        </div>
+                        <AppButton variant="primary" size="md" tag="a" href="/signatories">
+                            <Plus :size="16" /> Tambah Penanda Tangan
+                        </AppButton>
                     </div>
                 </div>
 
@@ -50,7 +65,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useForm, Link } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
+import { PenLine, Plus } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import AppButton from '@/Components/App/AppButton.vue';
 import AppInput from '@/Components/App/AppInput.vue';
@@ -103,7 +119,27 @@ function submit() {
 .ev-form__sig { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1.5px solid var(--color-border); border-radius: 10px; cursor: pointer; font-size: 13px; }
 .ev-form__sig--on { border-color: var(--color-primary); background: var(--color-primary-soft, #eff6ff); }
 .ev-form__sig small { color: var(--color-text-muted); }
-.ev-form__empty { font-size: 13px; color: var(--color-text-muted); }
+/* CTA dipertegas saat belum ada penanda tangan */
+.ev-form__empty {
+    display: flex; align-items: center; gap: 14px;
+    margin-top: 8px; padding: 16px 18px;
+    border: 1.5px dashed var(--color-primary);
+    border-radius: 12px;
+    background: var(--color-primary-soft, #eff6ff);
+}
+.ev-form__empty-icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--color-primary); color: #fff;
+}
+.ev-form__empty-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ev-form__empty-text strong { font-size: 14px; color: var(--color-text-primary); font-weight: 700; }
+.ev-form__empty-text span { font-size: 12.5px; color: var(--color-text-muted); line-height: 1.5; }
+
+@media (max-width: 560px) {
+    .ev-form__empty { flex-direction: column; align-items: flex-start; text-align: left; }
+}
 .ev-form__actions { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--color-border); padding-top: 18px; }
 @media (max-width: 640px) { .ev-form__grid { grid-template-columns: 1fr; } }
 </style>

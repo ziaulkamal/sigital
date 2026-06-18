@@ -28,8 +28,9 @@ class EventPolicy
 
     public function delete(User $user, Event $event): bool
     {
-        // Hanya pemilik yang boleh menghapus acara (collaborator tidak).
-        return $event->created_by === $user->id;
+        // Hanya Admin yang boleh menghapus acara (SuperAdmin lolos via Gate::before).
+        // Operator/owner non-Admin maupun collaborator tidak boleh menghapus.
+        return $user->hasRole('Admin');
     }
 
     /** Menyetujui/menolak permintaan gabung — hanya pemilik acara (SuperAdmin via before). */

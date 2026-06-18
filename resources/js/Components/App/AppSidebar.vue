@@ -28,11 +28,7 @@
         <!-- ── Logo / Brand ── -->
         <div class="flex items-center h-16 shrink-0 px-3 gap-3">
             <div class="sidebar-logo shrink-0">
-                <img v-if="appLogo" :src="appLogo" :alt="appName" class="sidebar-logo__img" />
-                <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M10 2L18 6.5V13.5L10 18L2 13.5V6.5L10 2Z" fill="white" fill-opacity="0.95"/>
-                    <circle cx="10" cy="10" r="3" fill="white" fill-opacity="0.5"/>
-                </svg>
+                <img :src="appLogo || logoAbdya" :alt="appName" class="sidebar-logo__img" />
             </div>
             <Transition name="slide-label">
                 <div v-if="showLabels" class="flex-1 min-w-0">
@@ -186,6 +182,9 @@ const props = defineProps({
 
 defineEmits(['update:collapsed', 'update:mobileOpen']);
 
+// Logo default: lambang Pemerintah Kabupaten Aceh Barat Daya (bila appLogo kosong).
+const logoAbdya = '/images/logo-abdya.png';
+
 const page        = usePage();
 const openKeys    = ref<Set<string>>(new Set());
 
@@ -297,12 +296,13 @@ const iconGroupStyle = computed<Record<string, string>>(() => ({
 
 .sidebar-logo {
     width: 38px; height: 38px; border-radius: 12px;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+    background: #ffffff;
+    padding: 3px;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     flex-shrink: 0; overflow: hidden;
 }
-.sidebar-logo__img { width: 100%; height: 100%; object-fit: cover; }
+.sidebar-logo__img { width: 100%; height: 100%; object-fit: contain; }
 
 /* ── Aurora overlay ── */
 .sidebar-aurora {

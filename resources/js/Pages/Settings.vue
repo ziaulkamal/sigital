@@ -4,7 +4,7 @@
     Tab Keamanan akan diperluas dengan 2FA pada P5.
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Pengaturan">
         <div class="page">
             <div class="page__header">
                 <h1 class="page__title">Pengaturan</h1>

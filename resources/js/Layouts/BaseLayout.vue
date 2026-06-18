@@ -9,6 +9,9 @@
         └───────────────┴──────────────────────────────────────┘
     -->
     <div :class="{ dark: isDark }" class="layout-root">
+        <!-- Judul head mengikuti halaman (prop title), suffix brand ditambah di app.ts. -->
+        <Head :title="title" />
+
 
         <!-- ── Sidebar: kolom kiri, sticky full height ── -->
         <AppSidebar
@@ -39,6 +42,9 @@
             <main class="layout-main">
                 <slot />
             </main>
+
+            <!-- Footer: credit pembuat + hak cipta (sesudah login) -->
+            <AppFooter />
         </div>
 
     </div>
@@ -46,10 +52,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { usePage } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { useTheme } from '@/Composables/useTheme';
 import AppSidebar from '@/Components/App/AppSidebar.vue';
 import AppTopbar  from '@/Components/App/AppTopbar.vue';
+import AppFooter  from '@/Components/App/AppFooter.vue';
 import { BREAKPOINT_MOBILE, BREAKPOINT_TABLET } from '@/config/layout';
 import {
     LayoutDashboard, Users, Kanban, Mail, MessageSquare,
@@ -84,6 +91,8 @@ const props = defineProps({
     appName:           { type: String, default: 'SIGITAL' },
     appSubtitle:       { type: String, default: 'Sertifikat Digital' },
     notificationCount: { type: Number, default: 0 },
+    // Judul halaman untuk <head>; kosong = pakai nama brand saja.
+    title:             { type: String, default: '' },
 });
 
 defineEmits(['open-search', 'open-notifications', 'open-user-menu']);

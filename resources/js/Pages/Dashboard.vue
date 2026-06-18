@@ -4,7 +4,7 @@
     dan aktivitas terakhir. Tanpa data/teks hardcode.
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Dashboard">
         <div class="dash">
             <div class="dash__header">
                 <div>

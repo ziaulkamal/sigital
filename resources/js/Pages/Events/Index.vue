@@ -3,7 +3,7 @@
     Daftar acara dengan status, jumlah peserta, dan pintasan ke detail.
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Acara">
         <div class="page">
             <div class="page__header">
                 <div>

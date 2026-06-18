@@ -5,7 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="csrf-token" content="{{ csrf_token() }}" />
 
-        <title inertia>{{ config('app.name', 'CRM') }}</title>
+        <!-- Favicon: lambang Pemerintah Kabupaten Aceh Barat Daya -->
+        <link rel="icon" type="image/png" href="/images/logo-abdya.png" />
+        <link rel="apple-touch-icon" href="/images/logo-abdya.png" />
+
+        <title inertia>{{ config('sigital.brand.name', 'SIGITAL') }}</title>
+        {{-- Nama brand untuk suffix judul (dibaca app.ts — tidak di-hardcode di JS). --}}
+        <meta name="app-name" content="{{ config('sigital.brand.name', 'SIGITAL') }}" />
 
         <!-- Preconnect for fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net" />

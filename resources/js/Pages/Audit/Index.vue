@@ -3,7 +3,7 @@
     Penampil log audit append-only + ekspor CSV (FR-19/20).
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Log Audit">
         <div class="page">
             <div class="page__header">
                 <div>

@@ -3,7 +3,7 @@
     Manajemen penanda tangan: daftar + tambah/ubah (modal) dengan unggah spesimen TTD.
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Penanda Tangan">
         <div class="page">
             <div class="page__header">
                 <div>

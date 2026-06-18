@@ -3,7 +3,7 @@
     Detail acara: info, peserta (manual + impor CSV), dan penerbitan batch dengan progres.
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Detail Acara">
         <div class="page">
             <div class="page__header">
                 <div>
@@ -338,7 +338,8 @@ function rowColor(s: string) { return ({ ok: 'success', duplikat: 'warning', err
 .muted { color: var(--color-text-subtle); }
 .batch { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; margin-bottom: 18px; }
 .batch__head { display: flex; justify-content: space-between; font-size: 13px; color: var(--color-text-muted); margin-bottom: 8px; }
-.page__card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 14px; padding: 8px; }
+.page__card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 14px; padding: 8px; margin-bottom: 18px; }
+.page__card:last-child { margin-bottom: 0; }
 .card__toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 4px; }
 .card__title { font-size: 15px; font-weight: 700; color: var(--color-text-primary); }
 .card__tools { display: flex; gap: 8px; }

@@ -176,6 +176,18 @@ Route::middleware(['auth', 'approved'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Publik — Halaman legal (dapat diakses sebelum & sesudah login)
+|--------------------------------------------------------------------------
+| Tanpa middleware guest/auth: tamu maupun pengguna login boleh membuka.
+*/
+Route::prefix('legal')->name('legal.')->group(function () {
+    Route::get('/syarat-ketentuan', fn () => Inertia::render('Legal/Terms'))->name('terms');
+    Route::get('/kebijakan-privasi', fn () => Inertia::render('Legal/Privacy'))->name('privacy');
+    Route::get('/cookie', fn () => Inertia::render('Legal/Cookie'))->name('cookie');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Publik — Verifikasi sertifikat (halaman Inertia, render via QR)
 |--------------------------------------------------------------------------
 | Data keaslian diambil dari API stateless; di sini hanya shell halaman.

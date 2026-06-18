@@ -1,2 +1,11 @@
+# SIGITAL — Sertifikat Digital, Pemerintah Kabupaten Aceh Barat Daya
+# Hanya halaman publik (luar) yang boleh diindeks mesin pencari.
+# Seluruh halaman internal (sesudah login) tidak boleh dirayapi.
+
 User-agent: *
-Disallow:
+Allow: /login
+Allow: /register
+Allow: /forgot-password
+Allow: /legal/
+Allow: /verify/
+Disallow: /

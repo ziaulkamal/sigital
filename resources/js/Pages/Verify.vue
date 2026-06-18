@@ -3,6 +3,8 @@
     Halaman verifikasi publik — ambil status keaslian dari API stateless (server-side).
 -->
 <template>
+    <Head title="Verifikasi Sertifikat" />
+
     <div class="verify">
         <div class="verify__card">
             <div class="verify__brand">{{ instansi }}</div>
@@ -35,6 +37,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { Head } from '@inertiajs/vue3';
 
 interface VerifyData {
     nomor: string; nama: string; acara: string;

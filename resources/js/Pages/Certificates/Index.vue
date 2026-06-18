@@ -3,7 +3,7 @@
     Arsip sertifikat: pencarian (nama/acara/nomor/tanggal) + unduh/email/cabut.
 -->
 <template>
-    <BaseLayout :nav-groups="navGroups">
+    <BaseLayout :nav-groups="navGroups" title="Arsip Sertifikat">
         <div class="page">
             <div class="page__header">
                 <div>
