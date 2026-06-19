@@ -27,6 +27,7 @@ use App\Http\Controllers\SignatoryController;
 use App\Http\Controllers\SwitchOrganizationController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TwoFactorController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -89,6 +90,11 @@ Route::middleware(['auth', 'approved', 'profile.complete'])->group(function () {
     // Otorisasi SuperAdmin ditegakkan di dalam controller (Gate::before, bukan peran pivot).
     Route::post('/switch-organization', SwitchOrganizationController::class)
         ->name('organization.switch');
+
+    // --- Pengguna terdaftar (Admin: instansi sendiri · SuperAdmin: semua) ---
+    Route::middleware('permission:manage-users')->group(function () {
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+    });
 
     // --- Data master (Admin) ---
     Route::middleware('permission:manage-signatories')->group(function () {

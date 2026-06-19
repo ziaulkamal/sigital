@@ -43,16 +43,17 @@ class HandleInertiaRequests extends Middleware
                 'logo' => $brandLogo ? asset('storage/'.$brandLogo) : null,
             ],
             // Notifikasi in-app untuk user terautentikasi (bel di topbar).
+            // Dibungkus agar kegagalan query notifikasi tidak menggagalkan SETIAP halaman.
             'notifications' => $user ? [
-                'unread' => fn () => $user->unreadNotifications()->count(),
-                'items' => fn () => $user->notifications()->latest()->limit(10)->get()
+                'unread' => fn () => rescue(fn () => $user->unreadNotifications()->count(), 0, false),
+                'items' => fn () => rescue(fn () => $user->notifications()->latest()->limit(10)->get()
                     ->map(fn ($n) => [
                         'id' => $n->id,
                         'type' => class_basename($n->type),
                         'data' => $n->data,
                         'read' => $n->read_at !== null,
                         'created_at' => $n->created_at?->diffForHumans(),
-                    ]),
+                    ]), [], false),
             ] : null,
             'auth' => [
                 'user' => $user ? [

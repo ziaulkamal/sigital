@@ -17,6 +17,7 @@ use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -94,7 +95,12 @@ class RegisterController extends Controller
         });
 
         // Beri tahu seluruh SuperAdmin ada pendaftar baru menunggu persetujuan.
-        Notification::send(User::whereNull('organization_id')->get(), new UserRegistered($user));
+        // Kegagalan notifikasi TIDAK boleh menggagalkan registrasi (akun sudah tersimpan).
+        try {
+            Notification::send(User::whereNull('organization_id')->get(), new UserRegistered($user));
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mengirim notifikasi UserRegistered', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
 
         // Login agar bisa melihat halaman "menunggu persetujuan"; akses aplikasi diblokir EnsureApproved.
         Auth::login($user);
