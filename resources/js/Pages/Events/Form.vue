@@ -13,6 +13,7 @@
             </div>
 
             <form class="ev-form page__card" @submit.prevent="submit">
+                <CreditCostNotice v-if="!isEdit" kind="event" />
                 <div class="ev-form__grid">
                     <AppInput v-model="form.nama" label="Nama Acara" required :error="form.errors.nama" />
                     <AppInput v-model="form.kode" label="Kode Acara (untuk nomor)" hint="mis. PELATIHAN-AI" :error="form.errors.kode" />
@@ -88,6 +89,7 @@ import AppButton from '@/Components/App/AppButton.vue';
 import AppInput from '@/Components/App/AppInput.vue';
 import AppTextarea from '@/Components/App/AppTextarea.vue';
 import AppSelect from '@/Components/App/AppSelect.vue';
+import CreditCostNotice from '@/Components/App/CreditCostNotice.vue';
 import { navGroups } from '@/data/navGroups';
 
 interface Opt { id: number; nama: string; jabatan?: string; }

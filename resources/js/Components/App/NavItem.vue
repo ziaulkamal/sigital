@@ -155,11 +155,14 @@ const emit = defineEmits(['toggle', 'expand-sidebar']);
 // Unique key for this dropdown item
 const itemKey = computed<string>(() => `${props.depth}-${props.item.label}`);
 
-// Active state computed from URL (overrides static prop)
+// Active state: utamakan flag `active` yang sudah dihitung induk (AppSidebar pakai
+// kecocokan href TERPANJANG agar sub-rute tak mengaktifkan induk). Fallback ke
+// pencocokan batas-segmen ('/') untuk item anak yang tak menerima flag.
 const isActive = computed<boolean>(() => {
-    if (!props.currentPath || !props.item.href) return !!props.item.active;
+    if (props.item.active !== undefined) return !!props.item.active;
+    if (!props.currentPath || !props.item.href) return false;
     const path = props.item.href;
-    return props.currentPath === path || (path !== '/' && props.currentPath.startsWith(path));
+    return props.currentPath === path || (path !== '/' && props.currentPath.startsWith(path + '/'));
 });
 
 const hasChildren = computed<boolean>(() => Array.isArray(props.item.children) && props.item.children!.length > 0);

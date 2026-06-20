@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -49,6 +50,80 @@ class User extends Authenticatable
     public function banner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'banned_by');
+    }
+
+    /** Ledger credit milik user (append-only). */
+    public function creditTransactions(): HasMany
+    {
+        return $this->hasMany(CreditTransaction::class);
+    }
+
+    /** Permintaan topup yang diajukan user. */
+    public function topupRequests(): HasMany
+    {
+        return $this->hasMany(TopupRequest::class);
+    }
+
+    /** Jejak login (IP + user-agent). */
+    public function loginLogs(): HasMany
+    {
+        return $this->hasMany(LoginLog::class);
+    }
+
+    /** Pencairan royalti marketplace yang diajukan user. */
+    public function marketplaceWithdrawals(): HasMany
+    {
+        return $this->hasMany(MarketplaceWithdrawal::class);
+    }
+
+    /** Login terakhir (untuk tampilan SuperAdmin). */
+    public function latestLogin(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(LoginLog::class)->latestOfMany('logged_at');
+    }
+
+    /** Paket Enterprise berlaku (aktif & belum kedaluwarsa). */
+    public function isEnterprise(): bool
+    {
+        return $this->plan === 'enterprise'
+            && $this->enterprise_expires_at !== null
+            && $this->enterprise_expires_at->isFuture();
+    }
+
+    /**
+     * Enterprise dengan benefit aktif: bebas-credit HANYA bila 2FA aktif.
+     * Tanpa 2FA, paket tetap ada namun benefit diblokir (tetap kena potong credit).
+     */
+    public function isEnterpriseActive(): bool
+    {
+        return $this->isEnterprise() && $this->hasTwoFactorEnabled();
+    }
+
+    /** Marketplace Creator aktif: aplikasi sudah di-approve SuperAdmin (Bagian 6.1). */
+    public function isMarketplaceCreator(): bool
+    {
+        return (bool) $this->marketplace_enabled;
+    }
+
+    /** Aplikasi pendaftaran creator sedang menunggu verifikasi SuperAdmin. */
+    public function creatorApplicationPending(): bool
+    {
+        return $this->creator_status === 'pending';
+    }
+
+    /** Rekening pencairan sudah diverifikasi SuperAdmin. */
+    public function hasVerifiedBank(): bool
+    {
+        return $this->bank_status === 'verified';
+    }
+
+    /**
+     * Gerbang fitur creator (publish & pencairan): wajib creator aktif DAN
+     * rekening terverifikasi. Ditegakkan server-side (anti-exploit).
+     */
+    public function canUseCreatorFeatures(): bool
+    {
+        return $this->isMarketplaceCreator() && $this->hasVerifiedBank();
     }
 
     /** SuperAdmin = user global tanpa organisasi (P1). */
@@ -115,6 +190,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'approved_at' => 'datetime',
             'banned_at' => 'datetime',
+            'credit_balance' => 'integer',
+            'enterprise_started_at' => 'datetime',
+            'enterprise_expires_at' => 'datetime',
+            'marketplace_enabled' => 'boolean',
+            'marketplace_joined_at' => 'datetime',
+            'creator_terms_accepted_at' => 'datetime',
+            'creator_applied_at' => 'datetime',
+            'creator_reviewed_at' => 'datetime',
+            'bank_reviewed_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'phone_otp_expires_at' => 'datetime',
             'password' => 'hashed',

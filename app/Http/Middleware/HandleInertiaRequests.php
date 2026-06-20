@@ -41,6 +41,13 @@ class HandleInertiaRequests extends Middleware
                 'name' => config('sigital.brand.name'),
                 'tagline' => config('sigital.brand.tagline'),
                 'logo' => $brandLogo ? asset('storage/'.$brandLogo) : null,
+                // Biaya credit untuk preflight UX di form (server tetap sumber kebenaran).
+                'credit' => [
+                    'cost_event' => (int) config('sigital.credit.cost_event'),
+                    'cost_template' => (int) config('sigital.credit.cost_template'),
+                    'rupiah_per_credit' => (int) config('sigital.credit.rupiah_per_credit'),
+                    'marketplace_price' => (int) config('sigital.credit.marketplace_price'),
+                ],
             ],
             // Notifikasi in-app untuk user terautentikasi (bel di topbar).
             // Dibungkus agar kegagalan query notifikasi tidak menggagalkan SETIAP halaman.
@@ -64,6 +71,13 @@ class HandleInertiaRequests extends Middleware
                     'status' => $user->status,
                     'is_super_admin' => $isSuperAdmin,
                     'two_factor_enabled' => $user->hasTwoFactorEnabled(),
+                    // Monetisasi — saldo & status paket untuk gating UI (server tetap sumber kebenaran).
+                    'credit_balance' => (int) $user->credit_balance,
+                    'plan' => $user->plan,
+                    'is_enterprise' => $user->isEnterprise(),
+                    'is_enterprise_active' => $user->isEnterpriseActive(),
+                    'is_credit_exempt' => $user->isSuperAdmin() || $user->isEnterpriseActive(),
+                    'marketplace_enabled' => $user->isMarketplaceCreator(),
                     'organization' => $organization ? [
                         'id' => $organization->id,
                         'nama' => $organization->nama,

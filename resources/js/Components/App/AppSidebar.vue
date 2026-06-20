@@ -194,10 +194,40 @@ const currentPath = computed(() => {
     return url.split('?')[0]; // strip query string
 });
 
+// Kumpulkan seluruh href menu (rekursif) → dipakai mencari kecocokan TERPANJANG,
+// agar sub-rute (mis. /credits/requests) tidak ikut mengaktifkan induk (/credits).
+function collectHrefs(items: NavItemType[]): string[] {
+    const out: string[] = [];
+    for (const i of items) {
+        if (i.href) out.push(i.href);
+        if (i.children) out.push(...collectHrefs(i.children));
+    }
+    return out;
+}
+
+const allHrefs = computed<string[]>(() =>
+    props.navGroups.flatMap((g) => collectHrefs(g.items)),
+);
+
+/** href cocok dgn path saat ini bila sama persis atau path adalah sub-rute (batas '/'). */
+function hrefMatches(href: string, path: string): boolean {
+    if (href === path) return true;
+    return href !== '/' && path.startsWith(href + '/');
+}
+
+// href terpanjang yang cocok dengan path saat ini = satu-satunya item yang aktif.
+const bestMatchHref = computed<string>(() => {
+    const path = currentPath.value;
+    let best = '';
+    for (const href of allHrefs.value) {
+        if (hrefMatches(href, path) && href.length > best.length) best = href;
+    }
+    return best;
+});
+
 function isItemActive(item: NavItemType): boolean {
     if (!item.href) return false;
-    return currentPath.value === item.href ||
-           (item.href !== '/' && currentPath.value.startsWith(item.href));
+    return item.href === bestMatchHref.value;
 }
 
 function hasActiveDescendant(items: NavItemType[]): boolean {

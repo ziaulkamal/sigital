@@ -12,23 +12,49 @@ use App\Models\Template;
 use App\Support\TemplateLayout;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class TemplateService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly CreditService $credit,
+    ) {}
 
     /**
      * @param  array{nama:string,deskripsi?:string|null,posisi_field?:array|null,is_active?:bool}  $data
      */
     public function create(array $data, ?UploadedFile $background = null): Template
     {
-        $template = new Template($this->prepare($data, $background));
-        // Latar diunggah → render via kanvas koordinat; selain itu pakai view default.
-        $template->view = $template->background_path ? 'certificates.canvas' : 'certificates.default';
-        $template->uploaded_by = Auth::id();
-        $template->save();
+        $payload = $this->prepare($data, $background);
+
+        // Pembuatan + pemotongan credit dalam satu transaksi (cek saldo mendahului save).
+        $template = DB::transaction(function () use ($payload) {
+            $actor = Auth::user();
+
+            $template = new Template($payload);
+            // Latar diunggah → render via kanvas koordinat; selain itu pakai view default.
+            $template->view = $template->background_path ? 'certificates.canvas' : 'certificates.default';
+            $template->uploaded_by = Auth::id();
+            $template->save();
+
+            // Potong credit hanya pada CREATE; user exempt dilewati.
+            if ($actor && ! $this->credit->isCreditExempt($actor)) {
+                $this->credit->consume(
+                    $actor,
+                    (int) config('sigital.credit.cost_template'),
+                    $template,
+                    'Buat template: '.$template->nama,
+                    'membuat template',
+                );
+            } elseif ($actor) {
+                $this->audit->log('credit.exempt', $template, ['action' => 'create_template'], $actor->id);
+            }
+
+            return $template;
+        });
 
         $this->audit->log('template.uploaded', $template, ['nama' => $template->nama]);
 

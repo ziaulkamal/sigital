@@ -3,6 +3,7 @@
 import {
     LayoutDashboard, Settings,
     CalendarIcon, AwardIcon, PenLineIcon, ShieldCheckIcon, UserCheckIcon, LayoutTemplateIcon, UsersIcon,
+    WalletIcon, ReceiptIcon, StoreIcon, SparklesIcon, BarChart3Icon,
 } from '@lucide/vue';
 
 export interface NavItem {
@@ -48,6 +49,25 @@ export const navGroups: NavGroup[] = [
             { label: 'Penanda Tangan', icon: PenLineIcon,         href: '/signatories', roles: ['Admin', 'SuperAdmin'] },
             { label: 'Template',       icon: LayoutTemplateIcon,  href: '/templates',   roles: ['Admin', 'SuperAdmin'] },
             { label: 'Log Audit',      icon: ShieldCheckIcon,     href: '/audit',       roles: ['Admin', 'SuperAdmin'] },
+        ],
+    },
+    {
+        label: 'Credit',
+        subtitle: 'Saldo & topup',
+        color: '#16a34a',
+        items: [
+            { label: 'Credit Saya',     icon: WalletIcon,  href: '/credits' },
+            { label: 'Permintaan Topup', icon: ReceiptIcon, href: '/credits/requests', roles: ['SuperAdmin'] },
+        ],
+    },
+    {
+        label: 'Marketplace',
+        subtitle: 'Template komunitas',
+        color: '#d97706',
+        items: [
+            { label: 'Jelajah Template', icon: StoreIcon,     href: '/marketplace' },
+            { label: 'Creator Saya',     icon: SparklesIcon,  href: '/marketplace/creator' },
+            { label: 'Statistik Marketplace', icon: BarChart3Icon, href: '/marketplace/admin', roles: ['SuperAdmin'] },
         ],
     },
     {

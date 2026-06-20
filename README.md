@@ -56,16 +56,45 @@ Dibangun di atas stack Laravel + Inertia.js + Vue 3 + TailwindCSS v4 dengan Type
 
 ## Fitur Utama
 
-- **Manajemen Acara** — buat & kelola acara/kegiatan beserta kolaborator (event member + join code)
-- **Manajemen Peserta** — input manual atau impor massal, pelacakan status sertifikat
-- **Penanda Tangan (Signatory)** — kelola penanda tangan resmi, cegah duplikasi
-- **Penerbitan Sertifikat** — render PDF dengan template & branding instansi, penomoran aman & sulit ditebak
-- **Template & Branding** — kustomisasi tampilan sertifikat per organisasi
-- **Multi-Organisasi (Tenancy)** — pemisahan data antar instansi, switcher untuk SuperAdmin
-- **Keamanan Akun** — verifikasi OTP via WhatsApp saat registrasi, Two-Factor Authentication (2FA)
-- **Notifikasi** — notifikasi internal (registrasi, persetujuan akun, acara, permintaan bergabung)
-- **Audit Log** — pencatatan aktivitas penting
-- **Dark Mode** — class-based, persisten via `localStorage`
+### Penerbitan Sertifikat
+- **Manajemen Acara** — buat & kelola acara/kegiatan; kolaborasi antar pengguna via *event member* + kode undangan (join code), dengan persetujuan pemilik acara.
+- **Manajemen Peserta** — input manual atau impor massal (pratinjau sebelum simpan), pelacakan status sertifikat per peserta.
+- **Penanda Tangan (Signatory)** — kelola penanda tangan resmi per-pengguna dengan deteksi & konfirmasi duplikat nama.
+- **Penerbitan & Arsip** — render PDF (penomoran aman & sulit ditebak, QR verifikasi), penerbitan satuan maupun massal (batch), pencabutan & pemulihan, regenerasi mengikuti template terbaru, serta distribusi via email.
+- **Verifikasi Publik** — halaman verifikasi keaslian sertifikat melalui token QR.
+
+### Template & Perancang Visual
+- **Perancang Template (WYSIWYG)** — editor kanvas (Konva) untuk menata posisi field di atas gambar latar; render PDF via Node. Layout berbasis fraksi, sanitasi anti-injeksi, dan font terkurasi.
+- **Branding Instansi** — kustomisasi logo & kop surat per organisasi pada sertifikat terbit.
+
+### Multi-Organisasi & Peran
+- **Tenancy** — pemisahan data antar instansi (dinas/komunitas); switcher organisasi untuk SuperAdmin.
+- **Alur Persetujuan Akun** — registrasi mandiri → status *pending* → persetujuan SuperAdmin; dinas wajib melampirkan surat rekomendasi.
+- **Manajemen Peran (SuperAdmin)** — penetapan peran Admin / Operator dalam konteks tim.
+- **Reset Password Pengguna** — SuperAdmin (lintas instansi) & Admin (instansinya sendiri) dapat mereset kata sandi pengguna lain.
+- **Blokir / Buka Blokir Akun** — pemblokiran disertai alasan yang ditampilkan saat login.
+
+### Monetisasi (PAD) — Sistem Credit
+- **Saldo Credit per-pengguna** — buat acara & template memotong credit; seluruh mutasi melalui *ledger* append-only yang dikunci transaksi (anti race-condition) dan tercatat di audit.
+- **Topup Credit** — pengajuan manual + unggah bukti transfer (disk privat) → verifikasi/penolakan oleh SuperAdmin.
+- **Penyesuaian Credit** — SuperAdmin dapat menambah/mengurangi saldo (dengan alasan; tak bisa minus).
+- **Paket Enterprise** — bebas-credit selama berlaku, ditetapkan SuperAdmin, **wajib 2FA aktif** agar benefit berjalan.
+- **Anti-eksploit** — saldo non-fillable, seluruh nominal dihitung server-side, dan upaya pemakaian saat saldo kurang tetap terekam di audit.
+
+### Marketplace Template & Creator
+- **Pendaftaran Creator** — registrasi dengan unggah KTP (disk privat), data identitas, dan persetujuan S&K; diverifikasi SuperAdmin. Halaman pendaftaran publik tersedia.
+- **Rekening Pencairan** — wajib diisi & diverifikasi SuperAdmin sebelum fitur creator (publikasi & pencairan) terbuka.
+- **Jual-Beli Template** — pemakaian template milik orang lain dengan bagi hasil credit (royalti pemilik + pendapatan platform yang dicatat terpisah).
+- **Pencairan Royalti** — pengajuan pencairan (potong biaya admin), penjadwalan & penandaan dibayar oleh SuperAdmin; notifikasi ke SuperAdmin + Admin instansi.
+- **Dashboard** — ringkasan kontribusi & pencairan untuk Creator; statistik marketplace, template terlaris, & verifikasi untuk SuperAdmin.
+
+### Keamanan & Operasional
+- **Keamanan Akun** — verifikasi OTP via WhatsApp saat registrasi, Two-Factor Authentication (2FA) opsional dengan recovery code.
+- **Log Login (GeoIP-ready)** — pencatatan IP & user-agent setiap login (termasuk via 2FA); slot kolom negara disiapkan.
+- **Notifikasi In-App** — registrasi, persetujuan akun, acara, permintaan bergabung, topup, pendaftaran/verifikasi creator & rekening, serta pencairan.
+- **Audit Log** — pencatatan aktivitas penting per organisasi (append-only, mencatat IP aktor).
+- **Manajemen Profil** — ubah nama/email/password, nonaktifkan akun sendiri, lengkapi profil wajib (NIK + HP) pasca-approve.
+- **Dark Mode** — class-based, persisten via `localStorage`.
 
 ---
 

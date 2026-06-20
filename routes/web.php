@@ -19,6 +19,7 @@ use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventMemberController;
+use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\ParticipantImportController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SignatoryController;
 use App\Http\Controllers\SwitchOrganizationController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\TopupController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -103,6 +105,12 @@ Route::middleware(['auth', 'approved', 'profile.complete'])->group(function () {
         // Ban/unban: hanya SuperAdmin (ditegakkan di controller via abort_unless).
         Route::post('users/{user}/ban', [UserController::class, 'ban'])->name('users.ban');
         Route::post('users/{user}/unban', [UserController::class, 'unban'])->name('users.unban');
+        // Reset password user lain (SuperAdmin: semua · Admin: instansinya sendiri — guard di controller).
+        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.resetPassword');
+        // Monetisasi (SuperAdmin only — guard di controller): peran, paket Enterprise, sesuaikan credit.
+        Route::post('users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
+        Route::post('users/{user}/plan', [UserController::class, 'setPlan'])->name('users.plan');
+        Route::post('users/{user}/credit', [UserController::class, 'adjustCredit'])->name('users.credit');
     });
 
     // --- Data master (Admin) ---
@@ -175,6 +183,39 @@ Route::middleware(['auth', 'approved', 'profile.complete'])->group(function () {
         Route::get('audit/export', [AuditController::class, 'export'])->name('audit.export');
     });
 
+    // --- Credit & topup (semua user terautentikasi) ---
+    Route::get('credits', [TopupController::class, 'index'])->name('credits.index');
+    Route::post('credits/topup', [TopupController::class, 'store'])->name('credits.topup');
+    // Verifikasi topup (SuperAdmin only — guard di controller).
+    Route::get('credits/requests', [TopupController::class, 'requests'])->name('credits.requests');
+    Route::get('credits/topup/{topup}/proof', [TopupController::class, 'proof'])->name('credits.topup.proof');
+    Route::post('credits/topup/{topup}/approve', [TopupController::class, 'approve'])->name('credits.topup.approve');
+    Route::post('credits/topup/{topup}/reject', [TopupController::class, 'reject'])->name('credits.topup.reject');
+
+    // --- Marketplace template (Bagian 6) ---
+    Route::get('marketplace', [MarketplaceController::class, 'browse'])->name('marketplace.browse');
+    Route::post('marketplace/{template}/purchase', [MarketplaceController::class, 'purchase'])->name('marketplace.purchase');
+    // Publikasi template milik sendiri (cek pemilik + Creator di controller).
+    Route::post('marketplace/{template}/publish', [MarketplaceController::class, 'publish'])->name('marketplace.publish');
+    Route::post('marketplace/{template}/unpublish', [MarketplaceController::class, 'unpublish'])->name('marketplace.unpublish');
+    // Pendaftaran Creator (KTP + identitas + S&K) & rekening pencairan.
+    Route::post('marketplace/apply', [MarketplaceController::class, 'applyCreator'])->name('marketplace.apply');
+    Route::post('marketplace/bank', [MarketplaceController::class, 'storeBank'])->name('marketplace.bank');
+    // Dashboard & pencairan Creator.
+    Route::get('marketplace/creator', [MarketplaceController::class, 'creator'])->name('marketplace.creator');
+    Route::post('marketplace/withdrawals', [MarketplaceController::class, 'requestWithdrawal'])->name('marketplace.withdrawals.request');
+    // SuperAdmin: dashboard & verifikasi pendaftaran/rekening/pencairan (guard di controller).
+    Route::get('marketplace/admin', [MarketplaceController::class, 'adminDashboard'])->name('marketplace.admin');
+    Route::get('marketplace/creators/{user}/ktp', [MarketplaceController::class, 'ktp'])->name('marketplace.creators.ktp');
+    Route::post('marketplace/creators/{user}/approve', [MarketplaceController::class, 'approveCreator'])->name('marketplace.creators.approve');
+    Route::post('marketplace/creators/{user}/reject', [MarketplaceController::class, 'rejectCreator'])->name('marketplace.creators.reject');
+    Route::post('marketplace/creators/{user}/bank/verify', [MarketplaceController::class, 'verifyBank'])->name('marketplace.creators.bank.verify');
+    Route::post('marketplace/creators/{user}/bank/reject', [MarketplaceController::class, 'rejectBank'])->name('marketplace.creators.bank.reject');
+    Route::post('marketplace/withdrawals/{withdrawal}/schedule', [MarketplaceController::class, 'scheduleWithdrawal'])->name('marketplace.withdrawals.schedule');
+    Route::post('marketplace/withdrawals/{withdrawal}/approve', [MarketplaceController::class, 'approveWithdrawal'])->name('marketplace.withdrawals.approve');
+    Route::post('marketplace/withdrawals/{withdrawal}/reject', [MarketplaceController::class, 'rejectWithdrawal'])->name('marketplace.withdrawals.reject');
+    Route::post('marketplace/withdrawals/{withdrawal}/paid', [MarketplaceController::class, 'markPaid'])->name('marketplace.withdrawals.paid');
+
     // --- Notifikasi in-app (bel topbar) ---
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
@@ -211,6 +252,10 @@ Route::prefix('legal')->name('legal.')->group(function () {
     Route::get('/kebijakan-privasi', fn () => Inertia::render('Legal/Privacy'))->name('privacy');
     Route::get('/cookie', fn () => Inertia::render('Legal/Cookie'))->name('cookie');
 });
+
+// Pendaftaran Marketplace Creator — landing publik (tamu diarahkan daftar/masuk;
+// user login melihat form aplikasi). Submit form tetap di POST marketplace/apply (auth).
+Route::get('/creator/register', [MarketplaceController::class, 'register'])->name('creator.register');
 
 /*
 |--------------------------------------------------------------------------

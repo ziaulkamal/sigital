@@ -31,10 +31,22 @@
                             {{ row.is_active ? 'Aktif' : 'Nonaktif' }}
                         </AppBadge>
                     </template>
+                    <template #cell-is_marketplace="{ row }">
+                        <AppBadge v-if="row.is_marketplace" color="warning" size="sm">Marketplace</AppBadge>
+                        <span v-else class="tpl__muted">—</span>
+                    </template>
                     <template #row-actions="{ row }">
                         <div class="tpl__actions">
                             <button class="tpl__btn" title="Perancang visual" @click="openEditor(row)"><LayoutTemplateIcon :size="15" /></button>
                             <button class="tpl__btn" title="Ubah info" @click="openEdit(row)"><PencilIcon :size="15" /></button>
+                            <button
+                                v-if="canPublish(row)"
+                                class="tpl__btn"
+                                :title="row.is_marketplace ? 'Tarik dari marketplace' : 'Publikasikan ke marketplace'"
+                                @click="togglePublish(row)"
+                            >
+                                <StoreIcon :size="15" />
+                            </button>
                             <button v-if="row.is_active" class="tpl__btn tpl__btn--danger" @click="deactivate(row)">
                                 <PowerIcon :size="15" />
                             </button>
@@ -46,6 +58,7 @@
 
         <AppModal v-model="modalOpen" :title="editing ? 'Ubah Template' : 'Tambah Template'">
             <form class="tpl__form" @submit.prevent="submit">
+                <CreditCostNotice v-if="!editing" kind="template" />
                 <AppInput v-model="form.nama" label="Nama" required :error="form.errors.nama" />
                 <AppTextarea v-model="form.deskripsi" label="Deskripsi" :rows="2" :error="form.errors.deskripsi" />
                 <div class="tpl__field">
@@ -65,7 +78,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
-import { PlusIcon, PencilIcon, PowerIcon, LayoutTemplateIcon } from '@lucide/vue';
+import { PlusIcon, PencilIcon, PowerIcon, LayoutTemplateIcon, StoreIcon } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import DataTable from '@/Components/App/DataTable.vue';
 import AppButton from '@/Components/App/AppButton.vue';
@@ -73,19 +86,26 @@ import AppModal from '@/Components/App/AppModal.vue';
 import AppInput from '@/Components/App/AppInput.vue';
 import AppTextarea from '@/Components/App/AppTextarea.vue';
 import AppBadge from '@/Components/App/AppBadge.vue';
+import CreditCostNotice from '@/Components/App/CreditCostNotice.vue';
 import FlashBanner from '@/Components/FlashBanner.vue';
 import { swalConfirm } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
 
-interface Template { id: number; nama: string; deskripsi: string | null; background: string | null; is_global: boolean; is_active: boolean; }
-defineProps<{ templates: Template[] }>();
+interface Template { id: number; nama: string; deskripsi: string | null; background: string | null; is_global: boolean; is_active: boolean; is_marketplace: boolean; is_mine: boolean; }
+const props = defineProps<{ templates: Template[]; isMarketplaceCreator: boolean }>();
 
 const columns = [
     { key: 'nama', label: 'Nama', sortable: true },
     { key: 'deskripsi', label: 'Deskripsi' },
     { key: 'background', label: 'Latar' },
     { key: 'is_active', label: 'Status' },
+    { key: 'is_marketplace', label: 'Marketplace' },
 ];
+
+function canPublish(row: Record<string, unknown>): boolean {
+    // Hanya pemilik yang sudah Marketplace Creator (atau sudah marketplace untuk menarik).
+    return Boolean(row.is_mine) && (props.isMarketplaceCreator || Boolean(row.is_marketplace));
+}
 
 const modalOpen = ref(false);
 const editing = ref<number | null>(null);
@@ -135,6 +155,20 @@ async function deactivate(row: Record<string, unknown>) {
         danger: true,
     });
     if (ok) useForm({}).delete(`/templates/${row.id}`);
+}
+
+async function togglePublish(row: Record<string, unknown>) {
+    const publishing = !row.is_marketplace;
+    const ok = await swalConfirm({
+        title: publishing ? 'Publikasikan ke marketplace?' : 'Tarik dari marketplace?',
+        text: publishing
+            ? `Template "${row.nama}" dapat dipakai user lain. Anda menerima royalti per pemakaian.`
+            : `Template "${row.nama}" tidak lagi muncul di marketplace.`,
+        confirmText: publishing ? 'Ya, publikasikan' : 'Ya, tarik',
+    });
+    if (!ok) return;
+    const action = publishing ? 'publish' : 'unpublish';
+    useForm({}).post(`/marketplace/${row.id}/${action}`, { preserveScroll: true });
 }
 </script>
 

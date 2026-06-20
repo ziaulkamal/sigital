@@ -176,3 +176,136 @@
  SEMUA FASE SELESAI. Lanjutan opsional (v-next): perancang template visual,
  SMTP produksi, policy objek granular untuk signatory/template bila dibutuhkan.
 ------------------------------------------------------------
+
+
+============================================================
+ FASE MONETISASI — Peran/Credit/Enterprise/Topup/LoginLog/Marketplace
+ Acuan: docs/rencana-credit-enterprise-peran.md
+ Toolchain: PowerShell + Herd (php artisan). Test: php artisan test. Build: npm run build.
+============================================================
+
+## CATATAN POLA (agar tak baca ulang dalam-dalam)
+- AuditLogger::log(aksi, ?Model, array detail, ?actorId) — sudah catat ip.
+- Service inject AuditLogger via constructor. Flash: back()->with('success'|'error').
+- Spatie teams: app(PermissionRegistrar::class)->setPermissionsTeamId($orgId) SEBELUM syncRoles, lalu forgetCachedPermissions().
+- SuperAdmin = org_id null via Gate::before. Guard controller: abort_unless($actor->isSuperAdmin(),403).
+- Model fillable pakai #[Fillable([...])] attribute (BUKAN $fillable). casts() method.
+- Migrasi: FK ke users tanpa constrained DB (SQLite ALTER-FK) — relasi via Eloquent. Pakai ->after().
+- Notification: extends Notification, via=['database'], toArray=>{title,message,url,icon}. SuperAdmin: User::whereNull('organization_id')->get().
+- Event dibuat di EventService::create() (Auth::id()=creator). Template di TemplateService::create().
+- Share auth.user di HandleInertiaRequests::share.
+
+## FASE A — Credit + Enterprise + Role (Bagian 1-3)
+[x] A1  config/sigital.php blok 'credit'
+[x] A2  Migrasi add_credit_and_plan_to_users (+marketplace cols, backfill 60)
+[x] A3  Migrasi create_credit_transactions_table
+[x] A4  Migrasi create_topup_requests_table
+[x] A5  Migrasi create_login_logs_table
+[x] A6  Model CreditTransaction
+[x] A7  Model TopupRequest
+[x] A8  Model LoginLog
+[x] A9  User: relasi + isEnterprise/isEnterpriseActive/isMarketplaceCreator + casts (credit_balance non-fillable)
+[x] A10 Exception InsufficientCreditException
+[x] A11 Service CreditService (balance/hasEnough/consume/grant/adjust/isCreditExempt)
+[x] A12 EventService::create potong credit
+[x] A13 TemplateService::create potong credit
+[x] A14 UserController::updateRole
+[x] A15 UserController::setPlan
+[x] A16 UserController::adjustCredit
+[x] A17 UserController::index map (saldo/plan/2fa/last_login)
+[x] A18 routes role/plan/credit
+[x] A19 HandleInertiaRequests share saldo/plan/exempt
+[x] A20 (tambahan) RegisterController beri signup_grant ke user baru
+
+## FASE B — Login Log (Bagian 5)
+[x] B1  LoginLogService::record + enrichCountry() stub
+[x] B2  AuthenticatedSessionController jalur non-2FA
+[x] B3  TwoFactorChallengeController jalur 2FA
+
+## FASE C — Topup (Bagian 4)
+[x] C1  StoreTopupRequest
+[x] C2  TopupController index/store/approve/reject/requests/proof
+[x] C3  Notifications TopupRequested, TopupReviewed
+[x] C4  routes /credits + admin approve/reject
+
+## FASE D — Frontend (Bagian 1-5) — npm run build HIJAU
+[x] D1  Users/Index.vue (peran/enterprise/credit/last-login + modal role/credit/plan)
+[x] D2  Credits/Index.vue (user: saldo, topup, riwayat)
+[x] D3  Credits/Requests.vue (SuperAdmin: approve/reject/lihat bukti)
+[x] D4  Components/App/CreditCostNotice.vue dipakai di Events/Form & Templates/Index
+[x] D5  Nav Credit + Permintaan Topup (navGroups.ts); share app.credit costs
+
+## FASE E — Test core (112 test LULUS termasuk eksisting)
+[x] E1  CreditConsumptionTest (4)
+[x] E2  EnterprisePlanTest (6)
+[x] E3  RoleAssignmentTest (4)
+[x] E4  TopupFlowTest (4)
+[x] E5  CreditAdjustTest (4)
+[x] E6  LoginLogTest (2)
+[~] E7  php artisan test LULUS; npm run build menyusul setelah Fase D
+
+## FASE F — Marketplace (Bagian 6) — SELESAI, 7 test lulus
+[x] F1  Migrasi templates marketplace cols (is_marketplace/marketplace_price/published_at)
+[x] F2  Migrasi template_usage_transactions
+[x] F3  Migrasi platform_credit_ledger
+[x] F4  Migrasi marketplace_withdrawals (+scheduled_payout_date)
+[x] F5  Model TemplateUsageTransaction/PlatformCreditLedger/MarketplaceWithdrawal
+[x] F6  CreditService type baru + recordPlatformRevenue
+[x] F7  TemplateMarketplaceService (publish/unpublish/purchase, no self-royalty)
+[x] F8  MarketplaceWithdrawalService (request/schedule/approve/reject-refund/markAsPaid)
+[x] F9  MarketplaceController + routes (browse/purchase/publish/withdraw/admin)
+[x] F10 Aktivasi marketplace creator (self + SuperAdmin)
+[x] F11 Frontend: Marketplace/Browse, Creator, AdminDashboard + tombol publish di Templates/Index + nav
+[x] F12 MarketplaceTest (7): split credit, no self-royalty, saldo kurang, withdraw fee, refund, min, aktivasi
+
+## VERIFIKASI AKHIR
+[x] V1  php artisan migrate (semua migrasi DONE; user lama backfill credit_balance=60)
+[x] V2  php artisan test → 119 lulus, 399 assertions
+[x] V3  npm run build → HIJAU (Browse/Creator/AdminDashboard/Credits dibundel)
+
+============================================================
+ RINGKASAN FASE MONETISASI: SELESAI SEMUA (A–F + verifikasi)
+ 119 test lulus · build hijau · 8 migrasi baru
+============================================================
+
+## TINDAK LANJUT (permintaan langsung pengguna) — SELESAI, 125 test
+[x] G1  Fix nav active-state: kecocokan href TERPANJANG (AppSidebar.bestMatchHref)
+        agar /credits tak aktif saat di /credits/requests, /marketplace tak aktif
+        di sub-rute. NavItem hormati flag active dari induk; fallback batas '/'.
+[x] G2  Users/Index.vue responsif: kolom sekunder disembunyikan bertahap
+        (col--hide-sm/md/lg/xl), ringkasan instansi+peran di sel Pengguna pada layar kecil.
+[x] G3  Reset password user lain: UserController::resetPassword + route + modal.
+        SuperAdmin (semua instansi) · Admin (instansinya sendiri). Bukan SuperAdmin/diri sendiri.
+        Audit user.password_reset. Test ResetPasswordByAdminTest (5).
+[x] G4  Notifikasi WithdrawalRequested → SuperAdmin (global) + Admin instansi pemohon
+        saat Creator ajukan pencairan (MarketplaceWithdrawalService.notifyReviewers).
+[x] G5  Anti-exploit credit: credit_balance NON-fillable (hanya CreditService via forceFill);
+        semua amount server-side (config/DB, bukan client); consume tolak amount<=0;
+        upaya gagal dicatat audit 'credit.consume_denied' via Exception::report()
+        (di luar transaksi yg rollback). Topup/withdraw/purchase amount tak pernah
+        langsung jadi saldo dari client. Test: notifikasi pencairan + consume_denied.
+
+## PENDAFTARAN CREATOR (KTP + verifikasi rekening) — SELESAI, 134 test
+        Rencana: ~/.claude/plans/twinkling-kindling-hollerith.md
+[x] H1  Migrasi add_creator_application_and_bank_to_users (creator_* + bank_* cols)
+[x] H2  User: hasVerifiedBank/canUseCreatorFeatures/creatorApplicationPending + casts
+[x] H3  CreatorApplicationService (apply/approve/reject/saveBank/verifyBank/rejectBank)
+        KTP disimpan disk PRIVAT 'local'; saveBank ubah → reset bank_status=pending
+[x] H4  Request StoreCreatorApplicationRequest (full_name/address/ktp/terms accepted)
+        + StoreBankAccountRequest (bank_name/no/holder)
+[x] H5  4 Notifikasi: CreatorApplicationSubmitted/Reviewed, BankAccountSubmitted/Reviewed
+[x] H6  MarketplaceController: applyCreator/storeBank + SuperAdmin approve/reject/
+        verifyBank/rejectBank + ktp stream (SuperAdmin only) + adminDashboard daftar
+        creatorApplications & bankReviews + creator() props status
+[x] H7  Routes: marketplace/apply, marketplace/bank, marketplace/creators/{user}/
+        approve|reject|bank/verify|bank/reject|ktp (ganti activate lama)
+[x] H8  Gerbang publish & requestWithdrawal → canUseCreatorFeatures (creator+bank verified)
+[x] H9  Frontend Creator.vue alur bertahap (apply→pending→bank→dashboard);
+        AdminDashboard.vue section verifikasi pendaftaran + rekening; nav tetap.
+[x] H10 Test CreatorRegistrationTest (10) + MarketplaceTest disesuaikan; 134 test lulus, build hijau
+[x] H11 Halaman register Creator PUBLIK: GET /creator/register (MarketplaceController::register,
+        guest+auth, di blok publik web.php). Marketplace/Register.vue (AuthLayout):
+        tamu→CTA Daftar Akun/Masuk; belum approve/profil→arahkan; siap→form apply;
+        sudah/pending→tautan dashboard. applyCreator redirect ke marketplace.creator.
+        Link "Daftar Creator" di footer Login. 137 test lulus, build hijau.
+------------------------------------------------------------

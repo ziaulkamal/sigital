@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // uploaded_by server-controlled (diisi TemplateService) → tidak fillable.
+// Field marketplace (is_marketplace/marketplace_price/published_at) dikelola service → non-fillable.
 #[Fillable(['nama', 'slug', 'deskripsi', 'background_path', 'background_mime', 'view', 'posisi_field', 'canvas_width', 'canvas_height', 'fonts', 'thumbnail_path', 'is_active', 'is_global'])]
 class Template extends Model
 {
@@ -26,7 +27,20 @@ class Template extends Model
             'fonts' => 'array',
             'is_active' => 'boolean',
             'is_global' => 'boolean',
+            'is_marketplace' => 'boolean',
+            'published_at' => 'datetime',
         ];
+    }
+
+    /** Template dipublikasikan ke marketplace (dapat dipakai user lain). */
+    public function isPublished(): bool
+    {
+        return $this->is_marketplace && $this->published_at !== null;
+    }
+
+    public function usageTransactions(): HasMany
+    {
+        return $this->hasMany(TemplateUsageTransaction::class);
     }
 
     /** Template memakai perancang visual baru bila layout punya elements. */

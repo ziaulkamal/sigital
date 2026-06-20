@@ -11,6 +11,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\LoginLogService;
 use App\Services\TwoFactorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class TwoFactorChallengeController extends Controller
     public function __construct(
         private readonly TwoFactorService $service,
         private readonly AuditLogger $audit,
+        private readonly LoginLogService $loginLog,
     ) {}
 
     public function create(Request $request): Response|RedirectResponse
@@ -64,6 +66,7 @@ class TwoFactorChallengeController extends Controller
         $request->session()->regenerate();
 
         $this->audit->log('auth.login', $user, ['via' => '2fa']);
+        $this->loginLog->record($user, $request);
 
         return redirect()->intended(route('dashboard'));
     }

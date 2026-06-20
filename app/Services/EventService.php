@@ -13,13 +13,17 @@ use App\Models\User;
 use App\Notifications\EventCreated;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class EventService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly CreditService $credit,
+    ) {}
 
     /** @param array<string,mixed> $data */
     public function create(array $data, ?UploadedFile $logo = null): Event
@@ -31,23 +35,47 @@ class EventService
             $data['logo_path'] = $logo->store('event-logos', 'public');
         }
 
-        $event = new Event($data);
-        $event->created_by = Auth::id(); // pemilik (P7)
-        $event->join_code = $this->uniqueJoinCode();
-        $event->save();
+        // Pembuatan + pemotongan credit dalam satu transaksi: bila saldo kurang,
+        // seluruhnya rollback → tak ada acara yatim (cek saldo MENDAHULUI save).
+        $event = DB::transaction(function () use ($data, $signatoryIds) {
+            $actor = Auth::user();
 
-        // Pembuat otomatis menjadi owner ber-status approved (K10).
-        if ($event->created_by !== null) {
-            EventMember::create([
-                'event_id' => $event->id,
-                'user_id' => $event->created_by,
-                'role' => EventMember::ROLE_OWNER,
-                'status' => EventMember::STATUS_APPROVED,
-                'approved_at' => now(),
-            ]);
-        }
+            $event = new Event($data);
+            $event->created_by = Auth::id(); // pemilik (P7)
+            $event->join_code = $this->uniqueJoinCode();
 
-        $this->syncSignatories($event, $signatoryIds);
+            // Potong credit hanya pada CREATE; user exempt (Enterprise aktif/SuperAdmin) dilewati.
+            if ($actor && ! $this->credit->isCreditExempt($actor)) {
+                $event->save();
+                $this->credit->consume(
+                    $actor,
+                    (int) config('sigital.credit.cost_event'),
+                    $event,
+                    'Buat acara: '.$event->nama,
+                    'membuat acara',
+                );
+            } else {
+                $event->save();
+                if ($actor) {
+                    $this->audit->log('credit.exempt', $event, ['action' => 'create_event'], $actor->id);
+                }
+            }
+
+            // Pembuat otomatis menjadi owner ber-status approved (K10).
+            if ($event->created_by !== null) {
+                EventMember::create([
+                    'event_id' => $event->id,
+                    'user_id' => $event->created_by,
+                    'role' => EventMember::ROLE_OWNER,
+                    'status' => EventMember::STATUS_APPROVED,
+                    'approved_at' => now(),
+                ]);
+            }
+
+            $this->syncSignatories($event, $signatoryIds);
+
+            return $event;
+        });
 
         $this->audit->log('event.created', $event, ['nama' => $event->nama]);
 

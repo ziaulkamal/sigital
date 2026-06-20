@@ -55,6 +55,10 @@
                 Belum punya akun?
                 <Link href="/register" style="color: #6366f1; font-weight: 600;">Daftar sekarang</Link>
             </span>
+            <span style="display:block; margin-top:6px; color: var(--color-text-muted); font-size: 13px;">
+                Ingin jadi Creator?
+                <Link href="/creator/register" style="color: #6366f1; font-weight: 600;">Daftar Creator</Link>
+            </span>
         </template>
     </AuthLayout>
 </template>

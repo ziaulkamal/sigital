@@ -52,4 +52,20 @@ return [
 
     // Retensi data (NFR-07). Null = simpan selamanya. Satuan: hari.
     'retensi_hari' => env('SIGITAL_RETENSI_HARI'),
+
+    // Monetisasi (PAD): sistem credit, paket Enterprise & marketplace template.
+    // 1 credit = Rp1.000. Saldo per-user. Lihat docs/rencana-credit-enterprise-peran.md.
+    'credit' => [
+        'cost_event' => (int) env('SIGITAL_CREDIT_COST_EVENT', 50),       // buat acara
+        'cost_template' => (int) env('SIGITAL_CREDIT_COST_TEMPLATE', 10), // buat template
+        'rupiah_per_credit' => (int) env('SIGITAL_RUPIAH_PER_CREDIT', 1000),
+        'signup_grant' => (int) env('SIGITAL_CREDIT_SIGNUP_GRANT', 60),   // grandfather / saldo awal
+
+        // Marketplace template (Bagian 6).
+        'marketplace_price' => (int) env('SIGITAL_MARKETPLACE_PRICE', 15),         // biaya pakai template
+        'marketplace_owner_share' => (int) env('SIGITAL_MARKETPLACE_OWNER', 10),   // royalti pemilik
+        'marketplace_platform_share' => (int) env('SIGITAL_MARKETPLACE_PLATFORM', 5), // pendapatan platform
+        'withdraw_fee' => (int) env('SIGITAL_WITHDRAW_FEE', 10),                   // biaya admin pencairan
+        'withdraw_min' => (int) env('SIGITAL_WITHDRAW_MIN', 100),                  // minimal credit dicairkan
+    ],
 ];

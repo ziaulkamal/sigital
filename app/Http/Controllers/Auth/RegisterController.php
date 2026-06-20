@@ -73,10 +73,12 @@ class RegisterController extends Controller
 
             // Kolom server-controlled (bukan mass-assignment).
             // NIK & nomor HP belum diisi di sini — dilengkapi setelah akun di-approve.
+            // Saldo awal (signup_grant): cukup membuat satu acara, selebihnya perlu topup.
             $user->forceFill([
                 'organization_id' => $organization->id,
                 'status' => User::STATUS_PENDING,
                 'requested_role' => $requestedRole,
+                'credit_balance' => (int) config('sigital.credit.signup_grant', 60),
             ])->save();
 
             if ($newOrg) {

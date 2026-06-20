@@ -25,8 +25,10 @@ class TemplateController extends Controller
 {
     public function __construct(private readonly TemplateService $service) {}
 
-    public function index(): Response
+    public function index(\Illuminate\Http\Request $request): Response
     {
+        $user = $request->user();
+
         return Inertia::render('Templates/Index', [
             'templates' => Template::orderByDesc('id')->get()->map(fn ($t) => [
                 'id' => $t->id,
@@ -35,7 +37,10 @@ class TemplateController extends Controller
                 'background' => $t->background_path ? asset('storage/'.$t->background_path) : null,
                 'is_global' => $t->is_global,
                 'is_active' => $t->is_active,
+                'is_marketplace' => $t->is_marketplace,
+                'is_mine' => $t->uploaded_by === $user->id,
             ]),
+            'isMarketplaceCreator' => $user->isMarketplaceCreator(),
         ]);
     }
 
