@@ -106,8 +106,9 @@
                     @click="select(opt.value ?? opt)"
                 >
                     <span v-if="opt.icon" class="app-sel__opt-icon"><component :is="opt.icon" :size="14" /></span>
-                    {{ opt.label ?? opt }}
-                    <svg v-if="(opt.value ?? opt) === modelValue" class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <span class="app-sel__opt-label" :style="optStyle(opt)">{{ opt.label ?? opt }}</span>
+                    <span v-if="opt.badge" class="app-sel__opt-badge">{{ opt.badge }}</span>
+                    <svg v-if="(opt.value ?? opt) === modelValue" class="ml-auto app-sel__opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <polyline points="20 6 9 17 4 12"/>
                     </svg>
                 </button>
@@ -123,7 +124,7 @@
 import { ref, computed, nextTick, onMounted, onUnmounted, type PropType } from 'vue';
 import { SearchIcon } from '@lucide/vue';
 
-type SelectOption = { value?: string | number; label?: string; disabled?: boolean; icon?: unknown } | string | number;
+type SelectOption = { value?: string | number; label?: string; disabled?: boolean; icon?: unknown; style?: Record<string, string>; badge?: string } | string | number;
 
 const props = defineProps({
     modelValue: { type: [String, Number] as PropType<string | number>, default: '' },
@@ -158,6 +159,11 @@ const selectedLabel = computed<string>(() => {
 
 function optLabel(opt: SelectOption): string {
     return typeof opt === 'object' && opt !== null ? ((opt as { label?: string }).label ?? '') : String(opt);
+}
+
+/** Inline style per opsi (mis. preview font-family). */
+function optStyle(opt: SelectOption): Record<string, string> | undefined {
+    return typeof opt === 'object' && opt !== null ? (opt as { style?: Record<string, string> }).style : undefined;
 }
 
 const filteredOptions = computed<SelectOption[]>(() => {
@@ -254,6 +260,12 @@ onUnmounted(() => document.removeEventListener('click', onOutsideClick));
 .app-sel__option--placeholder { color: var(--color-text-subtle); font-style: italic; }
 .app-sel__option--disabled { opacity: 0.45; cursor: not-allowed; }
 .app-sel__opt-icon { display: flex; align-items: center; color: var(--color-text-muted); }
+.app-sel__opt-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.app-sel__opt-badge {
+    flex-shrink: 0; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+    padding: 1px 6px; border-radius: 999px; background: var(--color-bg-subtle); color: var(--color-text-subtle);
+}
+.app-sel__opt-check { flex-shrink: 0; }
 
 .app-sel__msg { font-size: 11.5px; }
 .app-sel__msg--error { color: var(--color-danger); }

@@ -45,6 +45,12 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    /** SuperAdmin yang memblokir akun ini (bila ada). */
+    public function banner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'banned_by');
+    }
+
     /** SuperAdmin = user global tanpa organisasi (P1). */
     public function isSuperAdmin(): bool
     {
@@ -61,6 +67,12 @@ class User extends Authenticatable
     public function isSuspended(): bool
     {
         return $this->status === self::STATUS_SUSPENDED;
+    }
+
+    /** Akun diblokir SuperAdmin (memiliki jejak banned_at) — selalu disertai alasan. */
+    public function isBanned(): bool
+    {
+        return $this->banned_at !== null;
     }
 
     /** 2FA aktif & sudah dikonfirmasi (jadi tantangan saat login) — P5. */
@@ -102,6 +114,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'approved_at' => 'datetime',
+            'banned_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'phone_otp_expires_at' => 'datetime',
             'password' => 'hashed',

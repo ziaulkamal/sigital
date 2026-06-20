@@ -25,6 +25,8 @@ class StoreEventRequest extends FormRequest
             'jadwal_mulai' => ['required', 'date'],
             'jadwal_selesai' => ['nullable', 'date', 'after_or_equal:jadwal_mulai'],
             'lokasi' => ['nullable', 'string', 'max:255'],
+            'keterangan' => ['nullable', 'string', 'max:2000'],
+            'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg', 'max:5120'],
             'template_id' => ['nullable', 'exists:templates,id'],
             'signatory_ids' => ['array'],
             'signatory_ids.*' => ['integer', 'exists:signatories,id'],

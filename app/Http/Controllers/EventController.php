@@ -10,6 +10,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
+use App\Models\EventMember;
 use App\Models\Signatory;
 use App\Models\Template;
 use App\Services\EventService;
@@ -29,20 +30,20 @@ class EventController extends Controller
         $events = Event::withCount(['registrations', 'signatories'])
             ->when(! $user->isSuperAdmin(), fn ($q) => $q->whereHas('members', fn ($m) => $m
                 ->where('user_id', $user->id)
-                ->where('status', \App\Models\EventMember::STATUS_APPROVED)))
+                ->where('status', EventMember::STATUS_APPROVED)))
             ->orderByDesc('id')->get();
 
         return Inertia::render('Events/Index', [
             'events' => $events->map(fn ($e) => [
-                    'id' => $e->id,
-                    'nama' => $e->nama,
-                    'kode' => $e->kode,
-                    'jadwal_mulai' => $e->jadwal_mulai?->toDateTimeString(),
-                    'lokasi' => $e->lokasi,
-                    'status' => $e->status,
-                    'peserta' => $e->registrations_count,
-                    'penanda_tangan' => $e->signatories_count,
-                ]),
+                'id' => $e->id,
+                'nama' => $e->nama,
+                'kode' => $e->kode,
+                'jadwal_mulai' => $e->jadwal_mulai?->toDateTimeString(),
+                'lokasi' => $e->lokasi,
+                'status' => $e->status,
+                'peserta' => $e->registrations_count,
+                'penanda_tangan' => $e->signatories_count,
+            ]),
         ]);
     }
 
@@ -53,7 +54,7 @@ class EventController extends Controller
 
     public function store(StoreEventRequest $request): RedirectResponse
     {
-        $event = $this->service->create($request->validated());
+        $event = $this->service->create($request->safe()->except('logo'), $request->file('logo'));
 
         return redirect()->route('events.show', $event)->with('success', 'Acara dibuat.');
     }
@@ -78,6 +79,8 @@ class EventController extends Controller
                 'jadwal_mulai' => $event->jadwal_mulai?->toDateTimeString(),
                 'jadwal_selesai' => $event->jadwal_selesai?->toDateTimeString(),
                 'lokasi' => $event->lokasi,
+                'keterangan' => $event->keterangan,
+                'logo' => $event->logo_path ? asset('storage/'.$event->logo_path) : null,
                 'status' => $event->status,
                 'can_issue' => $event->canIssue(),
                 'template' => $event->template?->only('id', 'nama'),
@@ -102,6 +105,7 @@ class EventController extends Controller
                     'id' => $r->certificate->id,
                     'nomor' => $r->certificate->nomor_unik,
                     'status' => $r->certificate->status,
+                    'pdf_ready' => (bool) $r->certificate->pdf_path,
                 ] : null,
             ]),
         ]);
@@ -121,6 +125,8 @@ class EventController extends Controller
                 'jadwal_mulai' => $event->jadwal_mulai?->format('Y-m-d\TH:i'),
                 'jadwal_selesai' => $event->jadwal_selesai?->format('Y-m-d\TH:i'),
                 'lokasi' => $event->lokasi,
+                'keterangan' => $event->keterangan,
+                'logo' => $event->logo_path ? asset('storage/'.$event->logo_path) : null,
                 'status' => $event->status,
                 'template_id' => $event->template_id,
                 'signatory_ids' => $event->signatories->pluck('id'),
@@ -131,7 +137,7 @@ class EventController extends Controller
     public function update(UpdateEventRequest $request, Event $event): RedirectResponse
     {
         $this->authorize('update', $event);
-        $this->service->update($event, $request->validated());
+        $this->service->update($event, $request->safe()->except('logo'), $request->file('logo'));
 
         return redirect()->route('events.show', $event)->with('success', 'Acara diperbarui.');
     }

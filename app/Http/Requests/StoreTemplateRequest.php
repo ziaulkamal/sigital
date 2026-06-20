@@ -23,10 +23,8 @@ class StoreTemplateRequest extends FormRequest
             'nama' => ['required', 'string', 'max:255'],
             'deskripsi' => ['nullable', 'string', 'max:1000'],
             'background' => ['nullable', 'file', 'mimes:png,jpg,jpeg,pdf', 'max:5120'],
-            'posisi_field' => ['nullable', 'array'],
-            'posisi_field.*.x' => ['nullable', 'numeric'],
-            'posisi_field.*.y' => ['nullable', 'numeric'],
-            'posisi_field.*.size' => ['nullable', 'numeric'],
+            // Layout posisi_field disimpan terpisah via perancang visual
+            // (POST templates/{template}/layout) dengan sanitasi ketat.
             'is_active' => ['boolean'],
         ];
     }

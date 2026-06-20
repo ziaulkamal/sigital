@@ -23,6 +23,22 @@
                 </div>
 
                 <div class="ev-form__field">
+                    <label class="ev-form__label">Keterangan Kegiatan</label>
+                    <p class="ev-form__hint">Dipakai pada sertifikat. Jika dikosongkan, keterangan dibuat otomatis dari nama acara, lokasi, tanggal, durasi, dan instansi.</p>
+                    <AppTextarea v-model="form.keterangan" :rows="3" placeholder="Kosongkan untuk keterangan otomatis…" :error="form.errors.keterangan" />
+                </div>
+
+                <div class="ev-form__field">
+                    <label class="ev-form__label">Logo Acara (opsional)</label>
+                    <p class="ev-form__hint">PNG/JPG. Bila kosong, sertifikat memakai logo organisasi.</p>
+                    <div class="ev-form__logo">
+                        <img v-if="logoPreview" :src="logoPreview" alt="Logo" class="ev-form__logo-img" />
+                        <input type="file" accept="image/png,image/jpeg" @change="onLogo" />
+                    </div>
+                    <p v-if="form.errors.logo" class="ev-form__err">{{ form.errors.logo }}</p>
+                </div>
+
+                <div class="ev-form__field">
                     <label class="ev-form__label">Penanda Tangan</label>
 
                     <!-- Ada penanda tangan: daftar pilihan -->
@@ -64,17 +80,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { PenLine, Plus } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import AppButton from '@/Components/App/AppButton.vue';
 import AppInput from '@/Components/App/AppInput.vue';
+import AppTextarea from '@/Components/App/AppTextarea.vue';
 import AppSelect from '@/Components/App/AppSelect.vue';
 import { navGroups } from '@/data/navGroups';
 
 interface Opt { id: number; nama: string; jabatan?: string; }
-interface EventData { id: number; nama: string; kode: string | null; jadwal_mulai: string | null; jadwal_selesai: string | null; lokasi: string | null; status: string; template_id: number | null; signatory_ids: number[]; }
+interface EventData { id: number; nama: string; kode: string | null; jadwal_mulai: string | null; jadwal_selesai: string | null; lokasi: string | null; keterangan: string | null; logo: string | null; status: string; template_id: number | null; signatory_ids: number[]; }
 
 const props = defineProps<{
     templateOptions: Opt[];
@@ -85,19 +102,33 @@ const props = defineProps<{
 const isEdit = computed(() => !!props.event);
 const templateOpts = computed(() => props.templateOptions.map((t) => ({ value: t.id, label: t.nama })));
 
-const form = useForm({
+const form = useForm<{
+    nama: string; kode: string; jadwal_mulai: string; jadwal_selesai: string;
+    lokasi: string; keterangan: string; logo: File | null;
+    template_id: number | string; signatory_ids: number[];
+}>({
     nama: props.event?.nama ?? '',
     kode: props.event?.kode ?? '',
     jadwal_mulai: props.event?.jadwal_mulai ?? '',
     jadwal_selesai: props.event?.jadwal_selesai ?? '',
     lokasi: props.event?.lokasi ?? '',
+    keterangan: props.event?.keterangan ?? '',
+    logo: null,
     template_id: props.event?.template_id ?? '',
     signatory_ids: props.event?.signatory_ids ? [...props.event.signatory_ids] : [],
 });
 
+const logoPreview = ref<string | null>(props.event?.logo ?? null);
+function onLogo(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+    form.logo = file;
+    logoPreview.value = file ? URL.createObjectURL(file) : (props.event?.logo ?? null);
+}
+
 function submit() {
     if (isEdit.value) {
-        form.put(`/events/${props.event!.id}`);
+        // Sertakan _method agar multipart (logo) terkirim lewat POST → spoof PUT.
+        form.transform((d) => ({ ...d, _method: 'put' })).post(`/events/${props.event!.id}`);
     } else {
         form.post('/events');
     }
@@ -140,6 +171,9 @@ function submit() {
 @media (max-width: 560px) {
     .ev-form__empty { flex-direction: column; align-items: flex-start; text-align: left; }
 }
+.ev-form__logo { display: flex; align-items: center; gap: 14px; }
+.ev-form__logo-img { height: 48px; border: 1px solid var(--color-border); border-radius: 8px; object-fit: contain; background: #fff; padding: 2px; }
+.ev-form__err { font-size: 12px; color: var(--color-danger); }
 .ev-form__actions { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--color-border); padding-top: 18px; }
 @media (max-width: 640px) { .ev-form__grid { grid-template-columns: 1fr; } }
 </style>

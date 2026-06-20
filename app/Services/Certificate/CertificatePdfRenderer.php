@@ -12,7 +12,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class CertificatePdfRenderer
 {
-    public function __construct(private readonly QrCodeGenerator $qr) {}
+    public function __construct(
+        private readonly QrCodeGenerator $qr,
+        private readonly NodeCanvasRenderer $nodeRenderer,
+    ) {}
 
     /** Hasilkan biner PDF untuk satu sertifikat. */
     public function render(Certificate $certificate): string
@@ -27,6 +30,12 @@ class CertificatePdfRenderer
         $event = $certificate->registration->event;
         $template = $event->template;
         $org = $event->organization;
+
+        // Template dgn perancang visual (WYSIWYG) → render via mesin Konva Node
+        // agar PDF identik dengan editor. Template lama → jalur DomPDF di bawah.
+        if ($template?->hasVisualLayout()) {
+            return $this->nodeRenderer->render($certificate);
+        }
 
         // Latar dari template (P6) → render via kanvas koordinat; selain itu view default.
         $backgroundPath = $this->publicPath($template?->background_path);

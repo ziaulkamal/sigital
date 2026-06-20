@@ -29,4 +29,10 @@ class QrCodeGenerator
         // Buang deklarasi XML di awal agar valid sebagai inline SVG di DomPDF.
         return (string) preg_replace('/<\?xml.*?\?>/', '', (string) $svg);
     }
+
+    /** Data URI SVG (base64) — dipakai Node renderer yang memuat via loadImage. */
+    public function svgDataUri(string $token, int $size = 300): string
+    {
+        return 'data:image/svg+xml;base64,'.base64_encode($this->svg($token, $size));
+    }
 }

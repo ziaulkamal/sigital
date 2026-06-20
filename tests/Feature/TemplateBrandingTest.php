@@ -169,4 +169,131 @@ class TemplateBrandingTest extends TestCase
         $this->assertStringStartsWith('%PDF', $pdf);
         $this->assertGreaterThan(1000, strlen($pdf));
     }
+
+    // ── Perancang visual (WYSIWYG) ───────────────────────────────────────
+
+    public function test_admin_can_save_visual_layout(): void
+    {
+        $admin = $this->adminFor($this->orgA);
+        app(Tenancy::class)->setOrganizationId($this->orgA->id);
+        $tpl = Template::create(['nama' => 'Visual', 'slug' => 'visual', 'canvas_width' => 1123, 'canvas_height' => 794]);
+        app(Tenancy::class)->setOrganizationId(null);
+
+        $this->actingAs($admin)->post("/templates/{$tpl->id}/layout", [
+            'layout' => [
+                'canvas' => ['w' => 1123, 'h' => 794],
+                'elements' => [
+                    ['id' => 'a', 'type' => 'nama_peserta', 'x' => 0.5, 'y' => 0.4, 'w' => 0.6, 'size' => 0.06, 'align' => 'center', 'color' => '#1d4ed8', 'bold' => true, 'font' => 'Poppins'],
+                    ['id' => 'b', 'type' => 'qr', 'x' => 0.08, 'y' => 0.8, 'w' => 0.12],
+                ],
+            ],
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $tpl->refresh();
+        $this->assertTrue($tpl->hasVisualLayout());
+        $this->assertCount(2, $tpl->posisi_field['elements']);
+        $this->assertSame('certificates.canvas', $tpl->view);
+        $this->assertContains('Poppins', $tpl->fonts);
+        $this->assertDatabaseHas('audit_logs', ['aksi' => 'template.layout_saved']);
+    }
+
+    public function test_layout_sanitizes_unknown_type_font_and_clamps_coords(): void
+    {
+        $admin = $this->adminFor($this->orgA);
+        app(Tenancy::class)->setOrganizationId($this->orgA->id);
+        $tpl = Template::create(['nama' => 'Sanit', 'slug' => 'sanit']);
+        app(Tenancy::class)->setOrganizationId(null);
+
+        $this->actingAs($admin)->post("/templates/{$tpl->id}/layout", [
+            'layout' => [
+                'canvas' => ['w' => 1000, 'h' => 700],
+                'elements' => [
+                    // type tak dikenal → dibuang
+                    ['id' => 'evil', 'type' => 'script', 'x' => 0.5, 'y' => 0.5],
+                    // font di luar whitelist → diganti default; koordinat di luar [0,1] → di-clamp;
+                    // warna invalid → default; teks <script> → di-strip.
+                    ['id' => 'ok', 'type' => 'teks', 'x' => 5, 'y' => -2, 'w' => 9, 'size' => 0.04, 'font' => 'EvilFont', 'color' => 'javascript:alert(1)', 'text' => '<script>x</script>Halo'],
+                ],
+            ],
+        ])->assertRedirect();
+
+        $tpl->refresh();
+        $els = $tpl->posisi_field['elements'];
+        $this->assertCount(1, $els); // 'script' dibuang
+        $this->assertSame('teks', $els[0]['type']);
+        $this->assertEquals(1, $els[0]['x']); // di-clamp ke 1
+        $this->assertEquals(0, $els[0]['y']); // di-clamp ke 0
+        $this->assertSame(config('fonts.default'), $els[0]['font']);
+        $this->assertSame('#111827', $els[0]['color']);
+        $this->assertStringNotContainsString('<script>', $els[0]['text']);
+    }
+
+    public function test_layout_accepts_tanda_tangan_block(): void
+    {
+        $admin = $this->adminFor($this->orgA);
+        app(Tenancy::class)->setOrganizationId($this->orgA->id);
+        $tpl = Template::create(['nama' => 'TTD', 'slug' => 'ttd-block']);
+        app(Tenancy::class)->setOrganizationId(null);
+
+        $this->actingAs($admin)->post("/templates/{$tpl->id}/layout", [
+            'layout' => [
+                'canvas' => ['w' => 1000, 'h' => 700],
+                'elements' => [
+                    ['id' => 's', 'type' => 'tanda_tangan', 'x' => 0.15, 'y' => 0.72, 'w' => 0.7, 'size' => 0.022, 'font' => 'Poppins', 'color' => '#111827'],
+                ],
+            ],
+        ])->assertRedirect();
+
+        $tpl->refresh();
+        $els = $tpl->posisi_field['elements'];
+        $this->assertSame('tanda_tangan', $els[0]['type']);
+        $this->assertSame('Poppins', $els[0]['font']); // blok membawa gaya teks
+    }
+
+    public function test_node_renderer_produces_pdf_when_node_available(): void
+    {
+        // Lewati bila Node/dependensi node-renderer tak terpasang agar suite tetap hijau.
+        $node = (string) config('fonts.node_binary', 'node');
+        $check = new \Symfony\Component\Process\Process(
+            [$node, '-e', "require('canvas')"],
+            base_path('node-renderer'),
+        );
+        $check->run();
+        if (! $check->isSuccessful()) {
+            $this->markTestSkipped('Node atau paket canvas (node-renderer) tidak tersedia: '.$check->getErrorOutput());
+        }
+
+        $bg = $this->realPublicPng('templates/bg-node.png');
+
+        app(Tenancy::class)->setOrganizationId($this->orgA->id);
+        $template = Template::create([
+            'nama' => 'Node', 'slug' => 'node-tpl',
+            'background_path' => $bg, 'view' => 'certificates.canvas',
+            'canvas_width' => 200, 'canvas_height' => 140,
+            'fonts' => ['DejaVu Sans'],
+            'posisi_field' => [
+                'canvas' => ['w' => 200, 'h' => 140],
+                'elements' => [
+                    ['id' => 'n', 'type' => 'nama_peserta', 'x' => 0.1, 'y' => 0.4, 'w' => 0.8, 'size' => 0.1, 'align' => 'center', 'color' => '#111827', 'bold' => true, 'font' => 'DejaVu Sans'],
+                ],
+            ],
+        ]);
+        $event = Event::create(['nama' => 'Workshop Node', 'jadwal_mulai' => now(), 'template_id' => $template->id]);
+        $person = Person::create(['nama' => 'Peserta Node', 'email' => 'pn@test.local']);
+        $reg = Registration::create(['person_id' => $person->id, 'event_id' => $event->id, 'sumber' => 'manual']);
+        $cert = Certificate::create([
+            'organization_id' => $this->orgA->id,
+            'registration_id' => $reg->id,
+            'nomor_unik' => 'DINASA/NODE',
+            'qr_token' => bin2hex(random_bytes(20)),
+            'status' => Certificate::STATUS_ISSUED,
+            'issued_at' => now(),
+        ]);
+        app(Tenancy::class)->setOrganizationId(null);
+
+        $pdf = app(CertificatePdfRenderer::class)->render($cert);
+
+        $this->assertStringStartsWith('%PDF', $pdf);
+        $this->assertGreaterThan(1000, strlen($pdf));
+    }
 }

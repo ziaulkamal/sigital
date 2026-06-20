@@ -9,6 +9,7 @@
 namespace App\Services;
 
 use App\Models\Template;
+use App\Support\TemplateLayout;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -59,6 +60,47 @@ class TemplateService
     }
 
     /**
+     * Simpan layout dari perancang visual (WYSIWYG). Layout DISANITASI penuh
+     * (anti-injeksi) sebelum disimpan; `fonts` diturunkan dari element teks.
+     *
+     * @param  array<string,mixed>|null  $layout
+     */
+    public function saveLayout(Template $template, ?array $layout): Template
+    {
+        $clean = TemplateLayout::sanitize($layout);
+
+        $template->posisi_field = $clean;
+        $template->fonts = $this->collectFonts($clean);
+        // Template dgn layout visual selalu dirender via kanvas.
+        $template->view = 'certificates.canvas';
+        $template->save();
+
+        $this->audit->log('template.layout_saved', $template, [
+            'elements' => count($clean['elements']),
+        ]);
+
+        return $template;
+    }
+
+    /**
+     * Daftar font unik yang dipakai element teks (untuk dimuat Node renderer).
+     *
+     * @param  array{elements: array<int, array<string,mixed>>}  $layout
+     * @return array<int, string>
+     */
+    private function collectFonts(array $layout): array
+    {
+        $fonts = [];
+        foreach ($layout['elements'] as $el) {
+            if (isset($el['font']) && is_string($el['font'])) {
+                $fonts[$el['font']] = true;
+            }
+        }
+
+        return array_values(array_keys($fonts));
+    }
+
+    /**
      * @param  array<string,mixed>  $data
      * @return array<string,mixed>
      */
@@ -71,6 +113,13 @@ class TemplateService
         if ($background) {
             $data['background_path'] = $background->store('templates', 'public');
             $data['background_mime'] = $background->getMimeType();
+
+            // Dimensi natural gambar → basis konversi fraksi→piksel (WYSIWYG).
+            $size = @getimagesize($background->getRealPath());
+            if ($size !== false) {
+                $data['canvas_width'] = $size[0];
+                $data['canvas_height'] = $size[1];
+            }
         }
 
         return $data;

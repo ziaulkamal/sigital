@@ -76,6 +76,26 @@ class CertificateIssuer
         return $certificate;
     }
 
+    /**
+     * Terbitkan ULANG PDF dari template terbaru, PERTAHANKAN nomor_unik, qr_token,
+     * issued_at (identitas & link verifikasi tetap valid). Hanya pdf_path/pdf_hash
+     * diperbarui. Hanya untuk sertifikat berstatus issued.
+     */
+    public function regenerate(Certificate $certificate, ?int $by = null): Certificate
+    {
+        if ($certificate->status !== Certificate::STATUS_ISSUED) {
+            throw new RuntimeException('Hanya sertifikat aktif yang bisa dibuat ulang.');
+        }
+
+        $this->renderAndStore($certificate);
+
+        $this->audit->log('certificate.regenerated', $certificate, [
+            'nomor_unik' => $certificate->nomor_unik,
+        ], $by);
+
+        return $certificate;
+    }
+
     /** Render PDF, simpan ke disk arsip, dan catat hash SHA-256 (FR-13/NFR-08). */
     private function renderAndStore(Certificate $certificate): void
     {

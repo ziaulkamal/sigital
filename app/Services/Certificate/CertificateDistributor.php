@@ -43,4 +43,18 @@ class CertificateDistributor
         ]);
         $this->audit->log('certificate.revoked', $certificate, ['alasan' => $reason]);
     }
+
+    /** Pulihkan sertifikat yang dicabut (status → issued). Hanya untuk yang berstatus revoked. */
+    public function restore(Certificate $certificate): void
+    {
+        if ($certificate->status !== Certificate::STATUS_REVOKED) {
+            throw new \RuntimeException('Hanya sertifikat yang dicabut yang bisa dipulihkan.');
+        }
+
+        $certificate->update([
+            'status' => Certificate::STATUS_ISSUED,
+            'alasan_pencabutan' => null,
+        ]);
+        $this->audit->log('certificate.restored', $certificate);
+    }
 }

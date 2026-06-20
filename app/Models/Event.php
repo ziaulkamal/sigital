@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['nama', 'kode', 'jadwal_mulai', 'jadwal_selesai', 'lokasi', 'template_id', 'status'])]
+#[Fillable(['nama', 'kode', 'jadwal_mulai', 'jadwal_selesai', 'lokasi', 'logo_path', 'keterangan', 'template_id', 'status'])]
 class Event extends Model
 {
     use BelongsToOrganization;

@@ -7,6 +7,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Certificate;
 use App\Models\Event;
 use App\Models\Registration;
 use App\Services\Certificate\BatchIssuanceService;
@@ -47,6 +48,42 @@ class CertificateController extends Controller
 
         return back()->with('success', 'Penerbitan massal diantrekan.')
             ->with('batchId', $batch->id);
+    }
+
+    /** Buat ulang PDF satu sertifikat dari template terbaru (nomor & QR tetap). */
+    public function regenerate(Certificate $certificate): RedirectResponse
+    {
+        $this->authorize('view', $certificate->registration->event);
+
+        try {
+            $this->issuer->regenerate($certificate, auth()->id());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Sertifikat dibuat ulang sesuai template terbaru.');
+    }
+
+    /** Buat ulang PDF semua sertifikat aktif pada acara (terapkan template terbaru). */
+    public function regenerateEvent(Event $event): RedirectResponse
+    {
+        $this->authorize('view', $event);
+
+        $certificates = Certificate::whereHas('registration', fn ($q) => $q->where('event_id', $event->id))
+            ->where('status', Certificate::STATUS_ISSUED)
+            ->get();
+
+        $count = 0;
+        foreach ($certificates as $cert) {
+            try {
+                $this->issuer->regenerate($cert, auth()->id());
+                $count++;
+            } catch (\RuntimeException) {
+                // lewati yang gagal; lanjutkan sisanya
+            }
+        }
+
+        return back()->with('success', "{$count} sertifikat dibuat ulang sesuai template terbaru.");
     }
 
     /** Progres batch untuk polling UI (FR-12). */

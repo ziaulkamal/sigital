@@ -23,6 +23,8 @@ class StoreSignatoryRequest extends FormRequest
             'nama' => ['required', 'string', 'max:255'],
             'jabatan' => ['required', 'string', 'max:255'],
             'gambar_ttd' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
+            // QR tanda tangan digital SRIKANDI (poin 7) — gambar QR hasil aplikasi pemerintah.
+            'qr_srikandi' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
             'is_active' => ['boolean'],
             // P3: konfirmasi nama duplikat. 'create_new' = lewati cek (sengaja buat baru).
             'confirm' => ['nullable', 'in:create_new'],

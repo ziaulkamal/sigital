@@ -31,6 +31,7 @@ class SignatoryController extends Controller
                 'nama' => $s->nama,
                 'jabatan' => $s->jabatan,
                 'gambar_ttd' => $s->gambar_ttd ? asset('storage/'.$s->gambar_ttd) : null,
+                'qr_srikandi' => $s->qr_srikandi_path ? asset('storage/'.$s->qr_srikandi_path) : null,
                 'is_active' => $s->is_active,
             ]),
         ]);
@@ -63,14 +64,23 @@ class SignatoryController extends Controller
             }
         }
 
-        $this->service->create($request->safe()->except('gambar_ttd', 'confirm'), $request->file('gambar_ttd'));
+        $this->service->create(
+            $request->safe()->except('gambar_ttd', 'qr_srikandi', 'confirm'),
+            $request->file('gambar_ttd'),
+            $request->file('qr_srikandi'),
+        );
 
         return back()->with('success', 'Penanda tangan berhasil ditambahkan.');
     }
 
     public function update(UpdateSignatoryRequest $request, Signatory $signatory): RedirectResponse
     {
-        $this->service->update($signatory, $request->safe()->except('gambar_ttd'), $request->file('gambar_ttd'));
+        $this->service->update(
+            $signatory,
+            $request->safe()->except('gambar_ttd', 'qr_srikandi'),
+            $request->file('gambar_ttd'),
+            $request->file('qr_srikandi'),
+        );
 
         return back()->with('success', 'Penanda tangan berhasil diperbarui.');
     }

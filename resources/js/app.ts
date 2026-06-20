@@ -6,6 +6,7 @@ import '@fontsource/jetbrains-mono/400.css';
 import { createApp, h } from 'vue';
 import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import VueKonva from 'vue-konva';
 import { showFlash } from '@/Composables/useSwal';
 
 type FlashProps = { flash?: { success?: string | null; error?: string | null } };
@@ -35,6 +36,7 @@ createInertiaApp({
 
         return createApp({ render: () => h(App, props) })
             .use(plugin)
+            .use(VueKonva)
             .mount(el);
     },
 

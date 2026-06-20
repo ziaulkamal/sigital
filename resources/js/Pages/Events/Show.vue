@@ -63,6 +63,10 @@
                             <template #icon><UserPlusIcon :size="14" /></template>
                             Tambah
                         </AppButton>
+                        <AppButton v-if="hasIssued" variant="outline" size="sm" :loading="regenerating" @click="regenerateAll">
+                            <template #icon><RefreshCwIcon :size="14" /></template>
+                            Regenerate Semua
+                        </AppButton>
                         <AppButton variant="primary" size="sm" :disabled="!event.can_issue" :loading="issuing" @click="issueBatch">
                             <template #icon><AwardIcon :size="14" /></template>
                             Terbitkan Massal
@@ -85,10 +89,26 @@
                     </template>
                     <template #row-actions="{ row }">
                         <div class="row-actions">
-                            <a v-if="row.certificate" :href="`/certificates/${row.certificate.id}/download`" class="icon-btn" title="Unduh PDF">
-                                <DownloadIcon :size="15" />
-                            </a>
-                            <button v-else-if="event.can_issue" class="icon-btn" title="Terbitkan" @click="issueOne(row)">
+                            <template v-if="row.certificate && row.certificate.status !== 'revoked'">
+                                <a :href="`/certificates/${row.certificate.id}/view`" target="_blank" class="icon-btn" title="Cetak / Buka PDF">
+                                    <PrinterIcon :size="15" />
+                                </a>
+                                <a :href="`/certificates/${row.certificate.id}/download`" class="icon-btn" title="Unduh PDF">
+                                    <DownloadIcon :size="15" />
+                                </a>
+                                <button class="icon-btn" title="Buat ulang (template terbaru)" @click="regenerateOne(row)">
+                                    <RefreshCwIcon :size="15" />
+                                </button>
+                                <button class="icon-btn icon-btn--danger" title="Batalkan (cabut)" @click="revokeOne(row)">
+                                    <BanIcon :size="15" />
+                                </button>
+                            </template>
+                            <!-- Sertifikat dicabut: SuperAdmin dapat memulihkan. -->
+                            <button v-else-if="row.certificate && row.certificate.status === 'revoked' && isSuperAdmin"
+                                class="icon-btn" title="Pulihkan sertifikat" @click="restoreOne(row)">
+                                <RotateCcwIcon :size="15" />
+                            </button>
+                            <button v-else-if="!row.certificate && event.can_issue" class="icon-btn" title="Terbitkan" @click="issueOne(row)">
                                 <AwardIcon :size="15" />
                             </button>
                             <button v-if="!row.certificate" class="icon-btn icon-btn--danger" title="Hapus" @click="removeParticipant(row)">
@@ -189,7 +209,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, onUnmounted } from 'vue';
 import { router, useForm, usePage, Link } from '@inertiajs/vue3';
-import { PencilIcon, UploadIcon, UserPlusIcon, AwardIcon, DownloadIcon, Trash2Icon, CopyIcon, CheckIcon, XIcon } from '@lucide/vue';
+import { PencilIcon, UploadIcon, UserPlusIcon, AwardIcon, DownloadIcon, Trash2Icon, CopyIcon, CheckIcon, XIcon, PrinterIcon, RefreshCwIcon, BanIcon, RotateCcwIcon } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import DataTable from '@/Components/App/DataTable.vue';
 import AppButton from '@/Components/App/AppButton.vue';
@@ -201,7 +221,7 @@ import FlashBanner from '@/Components/FlashBanner.vue';
 import { swalConfirm } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
 
-interface Cert { id: number; nomor: string; status: string; }
+interface Cert { id: number; nomor: string; status: string; pdf_ready?: boolean; }
 interface Participant { registration_id: number; nama: string; email: string | null; sumber: string; status_kehadiran: string; certificate: Cert | null; }
 interface Member { id: number; user: { id: number; name: string; email: string } | null; role: string; status: string; }
 interface EventData { id: number; nama: string; kode: string | null; lokasi: string | null; status: string; can_issue: boolean; template: { id: number; nama: string } | null; signatories: { id: number; nama: string; jabatan: string }[]; is_owner: boolean; join_code: string | null; members: Member[]; }
@@ -210,6 +230,7 @@ interface Preview { rows: PreviewRow[]; summary: { ok: number; duplikat: number;
 
 const props = defineProps<{ event: EventData; participants: Participant[] }>();
 const page = usePage();
+const isSuperAdmin = computed(() => (page.props.auth as { user?: { roles?: string[] } } | undefined)?.user?.roles?.includes('SuperAdmin') ?? false);
 
 const columns = [
     { key: 'nama', label: 'Nama', sortable: true },
@@ -239,6 +260,58 @@ async function removeParticipant(row: Record<string, unknown>) {
 }
 function issueOne(row: Record<string, unknown>) {
     router.post(`/registrations/${row.registration_id}/issue`, {}, { preserveScroll: true });
+}
+
+/* ---- Regenerate / Batalkan (poin 3) ---- */
+const regenerating = ref(false);
+const hasIssued = computed(() => props.participants.some((p) => p.certificate && p.certificate.status !== 'revoked'));
+
+function certOf(row: Record<string, unknown>) {
+    return (row.certificate as Cert | null);
+}
+async function regenerateOne(row: Record<string, unknown>) {
+    const cert = certOf(row);
+    if (!cert) return;
+    const ok = await swalConfirm({
+        title: 'Buat ulang sertifikat?',
+        text: `PDF "${row.nama}" dibuat ulang dari template terbaru. Nomor & QR tetap sama.`,
+        confirmText: 'Ya, buat ulang',
+    });
+    if (ok) router.post(`/certificates/${cert.id}/regenerate`, {}, { preserveScroll: true });
+}
+async function revokeOne(row: Record<string, unknown>) {
+    const cert = certOf(row);
+    if (!cert) return;
+    const ok = await swalConfirm({
+        title: 'Batalkan sertifikat?',
+        text: `Sertifikat "${row.nama}" akan dicabut (status: dibatalkan) dan verifikasi menjadi tidak sah.`,
+        confirmText: 'Ya, batalkan',
+        danger: true,
+    });
+    if (ok) router.post(`/certificates/${cert.id}/revoke`, {}, { preserveScroll: true });
+}
+async function restoreOne(row: Record<string, unknown>) {
+    const cert = certOf(row);
+    if (!cert) return;
+    const ok = await swalConfirm({
+        title: 'Pulihkan sertifikat?',
+        text: `Sertifikat "${row.nama}" akan diaktifkan kembali (status: aktif) dan verifikasi menjadi sah lagi.`,
+        confirmText: 'Ya, pulihkan',
+    });
+    if (ok) router.post(`/certificates/${cert.id}/restore`, {}, { preserveScroll: true });
+}
+async function regenerateAll() {
+    const ok = await swalConfirm({
+        title: 'Regenerate semua sertifikat?',
+        text: 'Semua sertifikat aktif acara ini dibuat ulang dari template terbaru. Nomor & QR tetap.',
+        confirmText: 'Ya, regenerate semua',
+    });
+    if (!ok) return;
+    regenerating.value = true;
+    router.post(`/events/${props.event.id}/regenerate`, {}, {
+        preserveScroll: true,
+        onFinish: () => { regenerating.value = false; },
+    });
 }
 
 /* ---- Kolaborasi (P7) ---- */

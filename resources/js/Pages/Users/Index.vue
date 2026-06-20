@@ -38,6 +38,7 @@
                             <th>Status</th>
                             <th>NIK / HP</th>
                             <th>Terdaftar</th>
+                            <th v-if="isSuperAdmin">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,27 +63,73 @@
                                 <span v-if="roleLabel(u)" class="muted">{{ roleLabel(u) }}</span>
                                 <span v-else class="muted">—</span>
                             </td>
-                            <td><AppBadge :color="statusColor(u.status)" size="sm">{{ statusLabel(u.status) }}</AppBadge></td>
+                            <td>
+                                <AppBadge :color="u.is_banned ? 'danger' : statusColor(u.status)" size="sm">
+                                    {{ u.is_banned ? 'Diblokir' : statusLabel(u.status) }}
+                                </AppBadge>
+                                <span v-if="u.is_banned && u.banned_reason" class="ban-reason" :title="u.banned_reason">
+                                    {{ u.banned_reason }}
+                                </span>
+                            </td>
                             <td>
                                 <span class="mono">{{ u.nik || '—' }}</span><br>
                                 <span class="mono muted">{{ u.phone || '—' }}</span>
                             </td>
                             <td><span class="muted">{{ formatDate(u.created_at) }}</span></td>
+                            <td v-if="isSuperAdmin">
+                                <span v-if="!u.organization || u.id === currentUserId" class="muted">—</span>
+                                <AppButton v-else-if="u.is_banned" variant="outline" size="sm" @click="unban(u)">
+                                    <template #icon><CircleCheckIcon :size="14" /></template>
+                                    Buka Blokir
+                                </AppButton>
+                                <AppButton v-else variant="danger" size="sm" @click="openBan(u)">
+                                    <template #icon><BanIcon :size="14" /></template>
+                                    Blokir
+                                </AppButton>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- Modal blokir akun: wajib menyebut alasan (ditampilkan ke user saat login). -->
+        <AppModal v-model="banOpen" title="Blokir Akun">
+            <p class="ban-modal__intro">
+                Blokir akun <strong>{{ banTarget?.name }}</strong>. Akun tidak dapat masuk dan
+                <strong>alasan di bawah akan ditampilkan kepada pengguna saat mencoba login</strong>.
+            </p>
+            <AppTextarea
+                v-model="banReason"
+                label="Alasan pemblokiran"
+                :rows="4"
+                placeholder="Mis. Pelanggaran ketentuan penggunaan…"
+                :error="banForm.errors.reason"
+                required
+            />
+            <template #footer>
+                <AppButton variant="ghost" @click="banOpen = false">Batal</AppButton>
+                <AppButton variant="danger" :loading="banForm.processing" :disabled="banReason.trim().length < 5" @click="submitBan">
+                    <template #icon><BanIcon :size="15" /></template>
+                    Blokir Akun
+                </AppButton>
+            </template>
+        </AppModal>
     </BaseLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { SearchIcon, UsersIcon } from '@lucide/vue';
+import { useForm } from '@inertiajs/vue3';
+import { SearchIcon, UsersIcon, BanIcon, CircleCheckIcon } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import AppBadge from '@/Components/App/AppBadge.vue';
+import AppButton from '@/Components/App/AppButton.vue';
 import AppInput from '@/Components/App/AppInput.vue';
 import AppSelect from '@/Components/App/AppSelect.vue';
+import AppTextarea from '@/Components/App/AppTextarea.vue';
+import AppModal from '@/Components/App/AppModal.vue';
+import { swalConfirm } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
 
 interface UserOrg { id: number; nama: string; kode: string; type: string }
@@ -90,10 +137,11 @@ interface UserRow {
     id: number; name: string; email: string;
     nik: string | null; phone: string | null;
     status: string; requested_role: string | null; roles: string[];
+    is_banned: boolean; banned_reason: string | null; banned_at: string | null;
     created_at: string | null; organization: UserOrg | null;
 }
 
-const props = defineProps<{ users: UserRow[]; isSuperAdmin: boolean }>();
+const props = defineProps<{ users: UserRow[]; isSuperAdmin: boolean; currentUserId: number }>();
 
 const q = ref('');
 const statusFilter = ref('');
@@ -133,6 +181,38 @@ function formatDate(d: string | null): string {
     if (!d) return '—';
     return new Date(d.replace(' ', 'T')).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 }
+
+// --- Blokir / buka blokir (SuperAdmin) ---
+const banOpen = ref(false);
+const banTarget = ref<UserRow | null>(null);
+const banReason = ref('');
+const banForm = useForm<{ reason: string }>({ reason: '' });
+
+function openBan(u: UserRow): void {
+    banTarget.value = u;
+    banReason.value = '';
+    banForm.clearErrors();
+    banOpen.value = true;
+}
+
+function submitBan(): void {
+    if (!banTarget.value) return;
+    banForm.reason = banReason.value.trim();
+    banForm.post(`/users/${banTarget.value.id}/ban`, {
+        preserveScroll: true,
+        onSuccess: () => { banOpen.value = false; banTarget.value = null; },
+    });
+}
+
+async function unban(u: UserRow): Promise<void> {
+    const ok = await swalConfirm({
+        title: 'Buka blokir akun?',
+        text: `${u.name} akan dapat masuk kembali ke aplikasi.`,
+        confirmText: 'Ya, buka blokir',
+    });
+    if (!ok) return;
+    useForm({}).post(`/users/${u.id}/unban`, { preserveScroll: true });
+}
 </script>
 
 <style scoped>
@@ -168,4 +248,12 @@ function formatDate(d: string | null): string {
 .org-kode { display: block; font-size: 11.5px; color: var(--color-text-subtle); }
 .muted { color: var(--color-text-muted); }
 .mono { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-primary); }
+
+.ban-reason {
+    display: block; max-width: 220px; margin-top: 4px;
+    font-size: 11.5px; line-height: 1.4; color: var(--color-danger, #dc2626);
+    white-space: normal; overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.ban-modal__intro { font-size: 13.5px; line-height: 1.5; color: var(--color-text-primary); margin-bottom: 14px; }
 </style>

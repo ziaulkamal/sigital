@@ -14,9 +14,9 @@ use App\Services\Certificate\CertificateDistributor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ArchiveController extends Controller
 {
@@ -60,6 +60,18 @@ class ArchiveController extends Controller
         );
     }
 
+    /** Tampilkan PDF inline (buka di tab baru) untuk dicetak (poin 3 — "cetak"). */
+    public function view(Certificate $certificate): StreamedResponse
+    {
+        abort_unless($certificate->pdf_path && Storage::disk(config('sigital.pdf_disk'))->exists($certificate->pdf_path), 404);
+
+        return Storage::disk(config('sigital.pdf_disk'))->response(
+            $certificate->pdf_path,
+            'sertifikat-'.str_replace(['/', '\\'], '-', $certificate->nomor_unik).'.pdf',
+            ['Content-Type' => 'application/pdf']
+        );
+    }
+
     public function email(Certificate $certificate): RedirectResponse
     {
         try {
@@ -77,5 +89,19 @@ class ArchiveController extends Controller
         $this->distributor->revoke($certificate, $request->input('alasan'));
 
         return back()->with('success', 'Sertifikat dicabut.');
+    }
+
+    /** Pulihkan sertifikat yang dicabut. HANYA SuperAdmin. */
+    public function restore(Request $request, Certificate $certificate): RedirectResponse
+    {
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        try {
+            $this->distributor->restore($certificate);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Sertifikat dipulihkan.');
     }
 }

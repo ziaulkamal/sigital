@@ -33,7 +33,8 @@
                     </template>
                     <template #row-actions="{ row }">
                         <div class="tpl__actions">
-                            <button class="tpl__btn" @click="openEdit(row)"><PencilIcon :size="15" /></button>
+                            <button class="tpl__btn" title="Perancang visual" @click="openEditor(row)"><LayoutTemplateIcon :size="15" /></button>
+                            <button class="tpl__btn" title="Ubah info" @click="openEdit(row)"><PencilIcon :size="15" /></button>
                             <button v-if="row.is_active" class="tpl__btn tpl__btn--danger" @click="deactivate(row)">
                                 <PowerIcon :size="15" />
                             </button>
@@ -63,8 +64,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-import { PlusIcon, PencilIcon, PowerIcon } from '@lucide/vue';
+import { router, useForm } from '@inertiajs/vue3';
+import { PlusIcon, PencilIcon, PowerIcon, LayoutTemplateIcon } from '@lucide/vue';
 import BaseLayout from '@/Layouts/BaseLayout.vue';
 import DataTable from '@/Components/App/DataTable.vue';
 import AppButton from '@/Components/App/AppButton.vue';
@@ -97,6 +98,10 @@ function openCreate() {
     form.reset();
     form.clearErrors();
     modalOpen.value = true;
+}
+
+function openEditor(row: Record<string, unknown>) {
+    router.visit(`/templates/${row.id}/editor`);
 }
 
 function openEdit(row: Record<string, unknown>) {

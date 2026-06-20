@@ -31,7 +31,18 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
         $user = $request->user();
 
-        // Akun dinonaktifkan → tolak login.
+        // Akun diblokir SuperAdmin → tolak login & tampilkan alasan pemblokiran.
+        if ($user->isBanned()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun Anda diblokir. Alasan: '.$user->banned_reason,
+            ]);
+        }
+
+        // Akun dinonaktifkan (tanpa jejak ban) → tolak login.
         if ($user->isSuspended()) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();

@@ -36,6 +36,12 @@ use Inertia\Inertia;
 | Tamu (guest)
 |--------------------------------------------------------------------------
 */
+// Sajikan berkas font terkurasi (.ttf) untuk @font-face perancang template.
+// Hanya nama family dalam whitelist config/fonts → cegah path traversal.
+Route::get('/fonts/{family}/{weight?}', [TemplateController::class, 'font'])
+    ->where('weight', 'regular|bold')
+    ->name('fonts.file');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
@@ -94,6 +100,9 @@ Route::middleware(['auth', 'approved', 'profile.complete'])->group(function () {
     // --- Pengguna terdaftar (Admin: instansi sendiri · SuperAdmin: semua) ---
     Route::middleware('permission:manage-users')->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');
+        // Ban/unban: hanya SuperAdmin (ditegakkan di controller via abort_unless).
+        Route::post('users/{user}/ban', [UserController::class, 'ban'])->name('users.ban');
+        Route::post('users/{user}/unban', [UserController::class, 'unban'])->name('users.unban');
     });
 
     // --- Data master (Admin) ---
@@ -108,6 +117,10 @@ Route::middleware(['auth', 'approved', 'profile.complete'])->group(function () {
     Route::middleware('permission:manage-templates')->group(function () {
         Route::get('templates', [TemplateController::class, 'index'])->name('templates.index');
         Route::post('templates', [TemplateController::class, 'store'])->name('templates.store');
+        // Perancang visual (WYSIWYG) — sebelum wildcard {template} agar tak bentrok.
+        Route::get('templates/{template}/editor', [TemplateController::class, 'editor'])->name('templates.editor');
+        Route::post('templates/{template}/layout', [TemplateController::class, 'saveLayout'])->name('templates.layout');
+        Route::post('templates/{template}/preview', [TemplateController::class, 'preview'])->name('templates.preview');
         Route::post('templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
         Route::delete('templates/{template}', [TemplateController::class, 'destroy'])->name('templates.destroy');
         // Branding organisasi (logo/kop) — K8
@@ -136,6 +149,9 @@ Route::middleware(['auth', 'approved', 'profile.complete'])->group(function () {
     Route::middleware('permission:issue-certificates')->group(function () {
         Route::post('events/{event}/issue', [CertificateController::class, 'issueBatch'])->name('certificates.issueBatch');
         Route::post('registrations/{registration}/issue', [CertificateController::class, 'issueOne'])->name('certificates.issueOne');
+        // Regenerate (terapkan template terbaru; nomor & QR tetap) — satuan & se-acara.
+        Route::post('certificates/{certificate}/regenerate', [CertificateController::class, 'regenerate'])->name('certificates.regenerate');
+        Route::post('events/{event}/regenerate', [CertificateController::class, 'regenerateEvent'])->name('certificates.regenerateEvent');
         Route::get('batch/{batchId}/status', [CertificateController::class, 'batchStatus'])->name('certificates.batchStatus');
     });
 
@@ -143,11 +159,15 @@ Route::middleware(['auth', 'approved', 'profile.complete'])->group(function () {
     Route::middleware('permission:view-archive')->group(function () {
         Route::get('certificates', [ArchiveController::class, 'index'])->name('certificates.index');
         Route::get('certificates/{certificate}/download', [ArchiveController::class, 'download'])->name('certificates.download');
+        Route::get('certificates/{certificate}/view', [ArchiveController::class, 'view'])->name('certificates.view');
     });
     Route::post('certificates/{certificate}/email', [ArchiveController::class, 'email'])
         ->middleware('permission:distribute-certificates')->name('certificates.email');
     Route::post('certificates/{certificate}/revoke', [ArchiveController::class, 'revoke'])
         ->middleware('permission:issue-certificates')->name('certificates.revoke');
+    // Pulihkan sertifikat dicabut — otorisasi SuperAdmin dicek di controller.
+    Route::post('certificates/{certificate}/restore', [ArchiveController::class, 'restore'])
+        ->middleware('permission:issue-certificates')->name('certificates.restore');
 
     // --- Log audit (Admin) ---
     Route::middleware('permission:export-audit')->group(function () {

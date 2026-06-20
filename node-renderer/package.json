@@ -1,0 +1,15 @@
+{
+  "name": "sigital-node-renderer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Render sertifikat WYSIWYG (Konva + node-canvas) dipanggil per-render oleh Laravel.",
+  "main": "render.mjs",
+  "scripts": {
+    "smoke": "node render.mjs < sample-payload.json > out.png && echo OK"
+  },
+  "dependencies": {
+    "canvas": "^3.1.0",
+    "konva": "^9.3.0"
+  }
+}

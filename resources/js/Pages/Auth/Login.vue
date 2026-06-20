@@ -1,5 +1,14 @@
 <template>
     <AuthLayout title="Selamat datang" :subtitle="`Masuk ke akun ${brandName}`">
+        <!-- Akun diblokir → tampilkan alasan dengan jelas (di atas form). -->
+        <div v-if="bannedMessage" class="auth-banned" role="alert">
+            <BanIcon :size="18" class="auth-banned__icon" />
+            <div>
+                <strong class="auth-banned__title">Akun diblokir</strong>
+                <p class="auth-banned__text">{{ bannedMessage }}</p>
+            </div>
+        </div>
+
         <form class="auth-form" @submit.prevent="submit">
             <div class="auth-form__field">
                 <label class="auth-form__label">Email</label>
@@ -7,7 +16,7 @@
                     v-model="form.email"
                     type="email"
                     placeholder="anda@instansi.go.id"
-                    :error="form.errors.email"
+                    :error="bannedMessage ? '' : form.errors.email"
                     size="md"
                 />
             </div>
@@ -53,6 +62,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useForm, usePage, Link } from '@inertiajs/vue3';
+import { BanIcon } from '@lucide/vue';
 import AuthLayout   from '@/Layouts/AuthLayout.vue';
 import AppInput     from '@/Components/App/AppInput.vue';
 import AppButton    from '@/Components/App/AppButton.vue';
@@ -60,6 +70,12 @@ import AppCheckbox  from '@/Components/App/AppCheckbox.vue';
 
 const brandName = computed(() => (usePage().props.app as { name?: string })?.name ?? 'SIGITAL');
 const form = useForm({ email: '', password: '', remember: false });
+
+// Pesan blokir berasal dari error 'email' yang diawali "Akun Anda diblokir."
+const bannedMessage = computed(() => {
+    const err = form.errors.email ?? '';
+    return err.startsWith('Akun Anda diblokir') ? err : '';
+});
 
 function submit() {
     form.post('/login', {
@@ -69,6 +85,16 @@ function submit() {
 </script>
 
 <style scoped>
+.auth-banned {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 12px 14px; margin-bottom: 18px;
+    background: var(--color-danger-soft, rgba(220,38,38,0.08));
+    border: 1px solid var(--color-danger, #dc2626); border-radius: 10px;
+}
+.auth-banned__icon { color: var(--color-danger, #dc2626); flex-shrink: 0; margin-top: 1px; }
+.auth-banned__title { display: block; font-size: 13px; font-weight: 700; color: var(--color-danger, #dc2626); }
+.auth-banned__text { font-size: 12.5px; line-height: 1.45; color: var(--color-text-primary); margin-top: 2px; }
+
 .auth-form { display: flex; flex-direction: column; gap: 18px; }
 .auth-form__field { display: flex; flex-direction: column; gap: 6px; }
 .auth-form__label { font-size: 13px; font-weight: 600; color: var(--color-text-primary); }

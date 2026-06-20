@@ -11,12 +11,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\BanService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class UserController extends Controller
 {
+    public function __construct(private readonly BanService $banService) {}
+
     public function index(Request $request): Response
     {
         $actor = $request->user();
@@ -37,6 +41,9 @@ class UserController extends Controller
             'status' => $u->status,
             'requested_role' => $u->requested_role,
             'roles' => $u->getRoleNames()->all(),
+            'is_banned' => $u->isBanned(),
+            'banned_reason' => $u->banned_reason,
+            'banned_at' => $u->banned_at?->toDateTimeString(),
             'created_at' => $u->created_at?->toDateTimeString(),
             'organization' => $u->organization ? [
                 'id' => $u->organization->id,
@@ -49,6 +56,34 @@ class UserController extends Controller
         return Inertia::render('Users/Index', [
             'users' => $users,
             'isSuperAdmin' => $actor->isSuperAdmin(),
+            'currentUserId' => $actor->id,
         ]);
+    }
+
+    /** Blokir akun (SuperAdmin). Wajib menyebut alasan → ditampilkan ke user saat login. */
+    public function ban(Request $request, User $user): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_unless($actor->isSuperAdmin(), 403);
+        abort_if($user->isSuperAdmin() || $user->id === $actor->id, 403, 'Akun ini tidak dapat diblokir.');
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ], [], ['reason' => 'alasan']);
+
+        $this->banService->ban($user, $actor, $data['reason']);
+
+        return back()->with('success', "Akun {$user->name} diblokir.");
+    }
+
+    /** Buka blokir akun (SuperAdmin) → akun aktif kembali. */
+    public function unban(Request $request, User $user): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_unless($actor->isSuperAdmin(), 403);
+
+        $this->banService->unban($user, $actor);
+
+        return back()->with('success', "Blokir akun {$user->name} dibuka.");
     }
 }

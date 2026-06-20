@@ -94,4 +94,84 @@ class UserListingTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('users', 2));
     }
+
+    public function test_super_admin_can_ban_and_unban_user_with_reason(): void
+    {
+        $org = Organization::create(['nama' => 'Dinas A', 'kode' => 'DINASA', 'type' => 'dinas', 'is_active' => true]);
+        $target = $this->userIn($org, 'Operator', 'op@test.local');
+        $super = User::create(['name' => 'Super', 'email' => 'super@test.local', 'password' => 'password']);
+
+        $this->actingAs($super)
+            ->post("/users/{$target->id}/ban", ['reason' => 'Pelanggaran ketentuan penggunaan.'])
+            ->assertRedirect();
+
+        $target->refresh();
+        $this->assertTrue($target->isBanned());
+        $this->assertSame(User::STATUS_SUSPENDED, $target->status);
+        $this->assertSame('Pelanggaran ketentuan penggunaan.', $target->banned_reason);
+        $this->assertSame($super->id, $target->banned_by);
+
+        $this->actingAs($super)->post("/users/{$target->id}/unban")->assertRedirect();
+
+        $target->refresh();
+        $this->assertFalse($target->isBanned());
+        $this->assertSame(User::STATUS_APPROVED, $target->status);
+        $this->assertNull($target->banned_reason);
+    }
+
+    public function test_ban_requires_a_reason(): void
+    {
+        $org = Organization::create(['nama' => 'Dinas A', 'kode' => 'DINASA', 'type' => 'dinas', 'is_active' => true]);
+        $target = $this->userIn($org, 'Operator', 'op@test.local');
+        $super = User::create(['name' => 'Super', 'email' => 'super@test.local', 'password' => 'password']);
+
+        $this->actingAs($super)
+            ->post("/users/{$target->id}/ban", ['reason' => ''])
+            ->assertSessionHasErrors('reason');
+
+        $this->assertFalse($target->refresh()->isBanned());
+    }
+
+    public function test_admin_cannot_ban_users(): void
+    {
+        $org = Organization::create(['nama' => 'Dinas A', 'kode' => 'DINASA', 'type' => 'dinas', 'is_active' => true]);
+        $admin = $this->userIn($org, 'Admin', 'admin@test.local');
+        $target = $this->userIn($org, 'Operator', 'op@test.local');
+
+        $this->actingAs($admin)
+            ->post("/users/{$target->id}/ban", ['reason' => 'tidak boleh'])
+            ->assertForbidden();
+
+        $this->assertFalse($target->refresh()->isBanned());
+    }
+
+    public function test_super_admin_cannot_ban_another_super_admin_or_self(): void
+    {
+        $super = User::create(['name' => 'Super', 'email' => 'super@test.local', 'password' => 'password']);
+        $otherSuper = User::create(['name' => 'Super 2', 'email' => 'super2@test.local', 'password' => 'password']);
+
+        $this->actingAs($super)
+            ->post("/users/{$otherSuper->id}/ban", ['reason' => 'percobaan'])
+            ->assertForbidden();
+
+        $this->actingAs($super)
+            ->post("/users/{$super->id}/ban", ['reason' => 'percobaan'])
+            ->assertForbidden();
+    }
+
+    public function test_banned_user_cannot_login_and_sees_reason(): void
+    {
+        $org = Organization::create(['nama' => 'Dinas A', 'kode' => 'DINASA', 'type' => 'dinas', 'is_active' => true]);
+        $target = $this->userIn($org, 'Operator', 'op@test.local');
+        $target->forceFill(['password' => bcrypt('secret123')])->save();
+        $super = User::create(['name' => 'Super', 'email' => 'super@test.local', 'password' => 'password']);
+
+        app(\App\Services\BanService::class)->ban($target->refresh(), $super, 'Akun disalahgunakan.');
+
+        $response = $this->post('/login', ['email' => 'op@test.local', 'password' => 'secret123']);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertStringContainsString('Akun disalahgunakan.', session('errors')->first('email'));
+        $this->assertGuest();
+    }
 }

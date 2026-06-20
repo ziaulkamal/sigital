@@ -34,6 +34,10 @@
                         <img v-if="row.gambar_ttd" :src="String(row.gambar_ttd)" alt="TTD" class="sig__ttd" />
                         <span v-else class="sig__muted">—</span>
                     </template>
+                    <template #cell-qr_srikandi="{ row }">
+                        <AppBadge v-if="row.qr_srikandi" color="info" size="sm">SRIKANDI</AppBadge>
+                        <span v-else class="sig__muted">—</span>
+                    </template>
                     <template #cell-is_active="{ row }">
                         <AppBadge :color="row.is_active ? 'success' : 'default'" size="sm">
                             {{ row.is_active ? 'Aktif' : 'Nonaktif' }}
@@ -59,6 +63,12 @@
                     <label class="sig__label">Spesimen TTD (PNG/JPG, maks 2MB)</label>
                     <input type="file" accept="image/png,image/jpeg" @change="onFile" />
                     <p v-if="form.errors.gambar_ttd" class="sig__error">{{ form.errors.gambar_ttd }}</p>
+                </div>
+                <div class="sig__field">
+                    <label class="sig__label">QR Tanda Tangan Digital SRIKANDI (opsional)</label>
+                    <p class="sig__hint">Unggah gambar QR hasil aplikasi SRIKANDI. Bila ada, QR ini dipakai di sertifikat menggantikan spesimen TTD.</p>
+                    <input type="file" accept="image/png,image/jpeg" @change="onQr" />
+                    <p v-if="form.errors.qr_srikandi" class="sig__error">{{ form.errors.qr_srikandi }}</p>
                 </div>
             </form>
             <template #footer>
@@ -110,13 +120,14 @@ import FlashBanner from '@/Components/FlashBanner.vue';
 import { swalConfirm } from '@/Composables/useSwal';
 import { navGroups } from '@/data/navGroups';
 
-interface Signatory { id: number; nama: string; jabatan: string; gambar_ttd: string | null; is_active: boolean; }
+interface Signatory { id: number; nama: string; jabatan: string; gambar_ttd: string | null; qr_srikandi: string | null; is_active: boolean; }
 defineProps<{ signatories: Signatory[] }>();
 
 const columns = [
     { key: 'nama', label: 'Nama', sortable: true },
     { key: 'jabatan', label: 'Jabatan', sortable: true },
     { key: 'gambar_ttd', label: 'Spesimen' },
+    { key: 'qr_srikandi', label: 'SRIKANDI' },
     { key: 'is_active', label: 'Status' },
 ];
 
@@ -126,8 +137,8 @@ interface CandidatePayload { nama: string; jabatan: string; matches: Candidate[]
 const modalOpen = ref(false);
 const confirmOpen = ref(false);
 const editing = ref<number | null>(null);
-const form = useForm<{ nama: string; jabatan: string; gambar_ttd: File | null; confirm: string }>({
-    nama: '', jabatan: '', gambar_ttd: null, confirm: '',
+const form = useForm<{ nama: string; jabatan: string; gambar_ttd: File | null; qr_srikandi: File | null; confirm: string }>({
+    nama: '', jabatan: '', gambar_ttd: null, qr_srikandi: null, confirm: '',
 });
 
 // Kandidat nama serupa dikirim server lewat flash (pola pratinjau impor CSV).
@@ -165,6 +176,11 @@ function openEdit(row: Record<string, unknown>) {
 function onFile(e: Event) {
     const target = e.target as HTMLInputElement;
     form.gambar_ttd = target.files?.[0] ?? null;
+}
+
+function onQr(e: Event) {
+    const target = e.target as HTMLInputElement;
+    form.qr_srikandi = target.files?.[0] ?? null;
 }
 
 function submit() {
@@ -241,6 +257,7 @@ async function deactivate(row: Record<string, unknown>) {
 .sig__form { display: flex; flex-direction: column; gap: 16px; }
 .sig__field { display: flex; flex-direction: column; gap: 6px; }
 .sig__label { font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
+.sig__hint { font-size: 11.5px; color: var(--color-text-muted); line-height: 1.5; }
 .sig__error { font-size: 12px; color: #dc2626; }
 .sig__confirm { display: flex; flex-direction: column; gap: 14px; }
 .sig__confirm-lead { font-size: 13.5px; color: var(--color-text-muted); line-height: 1.5; }

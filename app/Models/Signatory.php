@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 // created_by sengaja tidak fillable (server-controlled): diisi di SignatoryService (P3).
-#[Fillable(['nama', 'jabatan', 'gambar_ttd', 'bsre_cert_id', 'is_active'])]
+#[Fillable(['nama', 'jabatan', 'gambar_ttd', 'qr_srikandi_path', 'bsre_cert_id', 'is_active'])]
 class Signatory extends Model
 {
     use BelongsToOrganization;

@@ -11,8 +11,10 @@ use App\Models\Event;
 use App\Models\EventMember;
 use App\Models\User;
 use App\Notifications\EventCreated;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class EventService
@@ -20,10 +22,14 @@ class EventService
     public function __construct(private readonly AuditLogger $audit) {}
 
     /** @param array<string,mixed> $data */
-    public function create(array $data): Event
+    public function create(array $data, ?UploadedFile $logo = null): Event
     {
         $signatoryIds = $data['signatory_ids'] ?? [];
         unset($data['signatory_ids']);
+
+        if ($logo) {
+            $data['logo_path'] = $logo->store('event-logos', 'public');
+        }
 
         $event = new Event($data);
         $event->created_by = Auth::id(); // pemilik (P7)
@@ -63,10 +69,17 @@ class EventService
     }
 
     /** @param array<string,mixed> $data */
-    public function update(Event $event, array $data): Event
+    public function update(Event $event, array $data, ?UploadedFile $logo = null): Event
     {
         $signatoryIds = $data['signatory_ids'] ?? null;
         unset($data['signatory_ids']);
+
+        if ($logo) {
+            if ($event->logo_path) {
+                Storage::disk('public')->delete($event->logo_path);
+            }
+            $data['logo_path'] = $logo->store('event-logos', 'public');
+        }
 
         $event->update($data);
         if ($signatoryIds !== null) {

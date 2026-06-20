@@ -27,11 +27,17 @@ class SignatoryService
 
     public function __construct(private readonly AuditLogger $audit) {}
 
-    /** @param array{nama:string,jabatan:string,is_active?:bool} $data */
-    public function create(array $data, ?UploadedFile $ttd = null): Signatory
+    /**
+     * @param  array{nama:string,jabatan:string,is_active?:bool}  $data
+     * @param  UploadedFile|null  $qrSrikandi  QR tanda tangan digital SRIKANDI (opsional, poin 7)
+     */
+    public function create(array $data, ?UploadedFile $ttd = null, ?UploadedFile $qrSrikandi = null): Signatory
     {
         if ($ttd) {
             $data['gambar_ttd'] = $ttd->store('signatures', 'public');
+        }
+        if ($qrSrikandi) {
+            $data['qr_srikandi_path'] = $qrSrikandi->store('srikandi', 'public');
         }
 
         $signatory = new Signatory($data);
@@ -86,11 +92,17 @@ class SignatoryService
     }
 
     /** @param array{nama:string,jabatan:string,is_active?:bool} $data */
-    public function update(Signatory $signatory, array $data, ?UploadedFile $ttd = null): Signatory
+    public function update(Signatory $signatory, array $data, ?UploadedFile $ttd = null, ?UploadedFile $qrSrikandi = null): Signatory
     {
         if ($ttd) {
             $this->deleteTtd($signatory);
             $data['gambar_ttd'] = $ttd->store('signatures', 'public');
+        }
+        if ($qrSrikandi) {
+            if ($signatory->qr_srikandi_path) {
+                Storage::disk('public')->delete($signatory->qr_srikandi_path);
+            }
+            $data['qr_srikandi_path'] = $qrSrikandi->store('srikandi', 'public');
         }
 
         $signatory->update($data);
