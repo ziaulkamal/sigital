@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Di belakang reverse proxy TLS (Nginx/Caddy/Traefik): percayai header
+        // X-Forwarded-* agar Laravel tahu request asli https (cegah Mixed Content aset).
+        $middleware->trustProxies(at: '*');
+
         // Tenancy (P1) lebih dulu agar scoping & share Inertia sudah tahu organisasi aktif.
         $middleware->web(append: [
             SetCurrentOrganization::class,
